@@ -3,205 +3,144 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ thống Tổng hợp Báo cáo KSTTHC - Xã Đan Hải</title>
-    <!-- Nhúng thư viện SheetJS xử lý file Excel -->
+    <title>Báo cáo Kiểm soát TTHC - Trích xuất Dữ liệu DVC</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- SheetJS CDN -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #eef2f5; color: #333; }
-        .container { max-width: 960px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-        h2 { color: #0056b3; text-align: center; margin-top: 0; text-transform: uppercase; font-size: 22px; }
-        .sub-title { text-align: center; color: #666; font-size: 14px; margin-bottom: 25px; }
-        
-        .section-box { border: 1px solid #cce5ff; background-color: #f8fbfd; border-radius: 8px; padding: 15px 20px; margin-bottom: 20px; }
-        .section-title { font-weight: bold; color: #004085; margin-bottom: 10px; font-size: 15px; display: flex; align-items: center; }
-        
-        .grid-files { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .form-group { background: #fff; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 6px; }
-        .form-group label { font-weight: 600; font-size: 13px; display: block; margin-bottom: 6px; color: #495057; }
-        input[type="file"] { width: 100%; font-size: 12px; }
-        
-        .btn-container { text-align: center; margin-top: 25px; }
-        .btn-submit { background-color: #28a745; color: white; border: none; padding: 14px 35px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: all 0.2s; box-shadow: 0 3px 6px rgba(40,167,69,0.3); }
-        .btn-submit:hover { background-color: #218838; transform: translateY(-1px); }
-        .note-text { font-size: 12px; color: #6c757d; font-style: italic; margin-top: 4px; }
-        
-        .status-badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 10px; background: #e2e8f0; color: #475569; margin-left: 8px; }
+        body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .card { border-radius: 10px; border: none; }
+        .btn-custom { background-color: #0d6efd; color: white; }
+        .btn-custom:hover { background-color: #0b5ed7; color: white; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>TỰ ĐỘNG TỔNG HỢP BÁO CÁO KSTTHC</h2>
-    <div class="sub-title">Ủy ban nhân dân xã Đan Hải - Hệ thống tổng hợp & chuẩn hóa dữ liệu báo cáo KSTTHC</div>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-9">
+            <div class="card shadow-sm p-4">
+                <h3 class="card-title text-center text-primary mb-4 fw-bold">
+                    HỆ THỐNG TRÍCH XUẤT VÀ TỔNG HỢP BÁO CÁO KSTTHC
+                </h3>
 
-    <!-- MỤC NẠP FILE DANH MỤC LĨNH VỰC (CHỈ NẠP KHI CÓ THAY ĐỔI) -->
-    <div class="section-box" style="border-color: #ffeeba; background-color: #fff8e6;">
-        <div class="section-title" style="color: #856404;">
-            📌 1. Danh mục Lĩnh vực & Mức độ TTHC 
-            <span class="status-badge" id="dmStatus">Đang dùng danh mục mặc định</span>
-        </div>
-        <div class="form-group" style="background: transparent; border: none; padding: 0;">
-            <label for="fileLinhVuc">Tải lên file Excel Danh mục Lĩnh vực (Chỉ chọn khi có cập nhật/thay đổi mới):</label>
-            <input type="file" id="fileLinhVuc" accept=".xlsx, .xls" onchange="loadCustomLinhVuc(this)">
-            <div class="note-text">* Nếu không chọn file, hệ thống tự động sử dụng danh mục Lĩnh vực đã lưu trước đó.</div>
-        </div>
-    </div>
+                <!-- Bước 1: Chọn loại báo cáo xuất -->
+                <div class="mb-3">
+                    <label for="exportType" class="form-label fw-semibold">1. Chọn loại báo cáo muốn xuất:</label>
+                    <select id="exportType" class="form-select">
+                        <option value="tong_hop">File Tổng hợp (Tổng số, Đang giải quyết, Nộp trực tuyến,...)</option>
+                        <option value="07a_btp">File 07a_BTP_KSTT_H27.144 (Mẫu M10 Chi tiết)</option>
+                    </select>
+                </div>
 
-    <!-- MỤC NẠP 8 FILE BÁO CÁO SỐ LIỆU TẢI VỀ -->
-    <div class="section-box">
-        <div class="section-title">📁 2. Đính kèm 8 file số liệu báo cáo tải về từ hệ thống</div>
-        
-        <div class="grid-files">
-            <div class="form-group">
-                <label>1. Biểu "Trong kỳ trực tuyến":</label>
-                <input type="file" id="file1" accept=".xlsx, .xls">
-            </div>
-            <div class="form-group">
-                <label>2. Biểu "Trong kỳ trực tiếp":</label>
-                <input type="file" id="file2" accept=".xlsx, .xls">
-            </div>
-            <div class="form-group">
-                <label>3. Biểu "Kỳ trước chuyển sang":</label>
-                <input type="file" id="file3" accept=".xlsx, .xls">
-            </div>
-            <div class="form-group">
-                <label>4. Biểu "Đã GQ đúng hạn":</label>
-                <input type="file" id="file4" accept=".xlsx, .xls">
-            </div>
-            <div class="form-group">
-                <label>5. Biểu "Đã GQ quá hạn":</label>
-                <input type="file" id="file5" accept=".xlsx, .xls">
-            </div>
-            <div class="form-group">
-                <label>6. Biểu "Rút hồ sơ / Trả lại":</label>
-                <input type="file" id="file6" accept=".xlsx, .xls">
-            </div>
-            <div class="form-group">
-                <label>7. Biểu "Đang GQ trong hạn":</label>
-                <input type="file" id="file7" accept=".xlsx, .xls">
-            </div>
-            <div class="form-group">
-                <label>8. Biểu "Đang GQ quá hạn":</label>
-                <input type="file" id="file8" accept=".xlsx, .xls">
+                <!-- Bước 2: Tải file dữ liệu -->
+                <div class="mb-3">
+                    <label for="fileInput" class="form-label fw-semibold">2. Chọn các file dữ liệu xuất từ DVC (.xlsx):</label>
+                    <input class="form-control" type="file" id="fileInput" multiple accept=".xlsx, .xls">
+                    <div class="form-text text-muted">Có thể chọn nhiều file cùng lúc. Nếu chỉ số/tiêu chí nào không có dữ liệu, hệ thống sẽ tự động gán bằng 0.</div>
+                </div>
+
+                <!-- Thao tác -->
+                <div class="d-grid gap-2 mt-4">
+                    <button class="btn btn-primary btn-lg" onclick="processAndExport()">
+                        <i class="bi bi-file-earmark-arrow-down"></i> Sử lý & Xuất Báo Cáo Tùy Chọn
+                    </button>
+                </div>
+
+                <!-- Bảng hiển thị trạng thái / xem trước -->
+                <div id="statusMessage" class="mt-4"></div>
             </div>
         </div>
-    </div>
-
-    <div class="btn-container">
-        <button type="button" class="btn-submit" onclick="processAndExport()">XUẤT FILE BÁO CÁO EXCEL HOÀN CHỈNH</button>
     </div>
 </div>
 
 <script>
-    // Danh mục mặc định lưu sẵn trong mã nguồn (Tra cứu theo Mã TTHC hoặc Tên TTHC)
-    let DANH_MUC_LINH_VUC = {
-        // Ví dụ mẫu chuẩn hóa TTHC cấp xã
-        "1.002238": { linhVuc: "Tư pháp - Hộ tịch", mucDo: "Toàn trình" },
-        "1.001124": { linhVuc: "Đất đai", mucDo: "Một phần" },
-        "1.000876": { linhVuc: "Lao động - Thương binh và Xã hội", mucDo: "Một phần" }
+async function processAndExport() {
+    const fileInput = document.getElementById('fileInput');
+    const exportType = document.getElementById('exportType').value;
+    const statusDiv = document.getElementById('statusMessage');
+
+    if (fileInput.files.length === 0) {
+        statusDiv.innerHTML = `<div class="alert alert-warning">Vui lòng chọn ít nhất một file Excel xuất từ DVC.</div>`;
+        return;
+    }
+
+    statusDiv.innerHTML = `<div class="alert alert-info">Đang xử lý dữ liệu... Vui lòng đợi trong giây lát.</div>`;
+
+    let compiledData = [];
+
+    for (let i = 0; i < fileInput.files.length; i++) {
+        const file = fileInput.files[i];
+        const data = await file.arrayBuffer();
+        const workbook = XLSX.read(data, { type: 'array' });
+        
+        // Đọc sheet đầu tiên của file
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+        // Xử lý trích xuất dòng/cột tương ứng
+        let parsedRow = parseDVCData(jsonData, file.name, exportType);
+        compiledData.push(parsedRow);
+    }
+
+    // Tạo file kết quả
+    generateExcelOutput(compiledData, exportType);
+    statusDiv.innerHTML = `<div class="alert alert-success">Xuất dữ liệu thành công! File đã được tải xuống.</div>`;
+}
+
+function parseDVCData(rows, fileName, exportType) {
+    // Khởi tạo đối tượng lưu trữ thông số, mặc định bằng 0 nếu thiếu
+    let result = {
+        "Tên File": fileName,
+        "Tổng số": 0,
+        "Đang giải quyết": 0,
+        "Đã giải quyết": 0,
+        "Nộp trực tuyến": 0,
+        "Trả kết quả trực tuyến": 0
     };
 
-    // Hàm đọc file Danh mục Lĩnh vực khi người dùng nạp file mới
-    async function loadCustomLinhVuc(input) {
-        if (!input.files || input.files.length === 0) return;
-        
-        const file = input.files[0];
-        const data = await file.arrayBuffer();
-        const workbook = XLSX.read(data, { type: 'array' });
-        const firstSheetName = workbook.SheetNames[0];
-        const rawData = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheetName], { defval: "" });
+    if (exportType === "07a_btp") {
+        result["Biểu mẫu"] = "07a_BTP_KSTT_H27.144";
+        result["Chỉ tiêu M10_1"] = 0;
+        result["Chỉ tiêu M10_2"] = 0;
+    }
 
-        let updatedCount = 0;
-        rawData.forEach(row => {
-            let key = row["Mã TTHC"] || row["Mã thủ tục"] || row["Tên thủ tục"] || "";
-            let linhVuc = row["Lĩnh vực"] || row["Tên lĩnh vực"] || "";
-            let mucDo = row["Mức độ"] || row["Mức độ DVC"] || "Một phần";
+    // Duyệt qua các hàng để bóc tách giá trị thực tế
+    for (let r = 0; r < rows.length; r++) {
+        let row = rows[r];
+        if (!row || row.length === 0) continue;
 
-            if (key && linhVuc) {
-                DANH_MUC_LINH_VUC[key.toString().trim()] = {
-                    linhVuc: linhVuc.trim(),
-                    mucDo: mucDo.trim()
-                };
-                updatedCount++;
+        for (let c = 0; c < row.length; c++) {
+            let cellText = String(row[c] || '').trim().toLowerCase();
+            
+            // Tìm kiếm chỉ số theo từ khóa tương ứng
+            if (cellText.includes("tổng số") || cellText.includes("tong so")) {
+                result["Tổng số"] = parseFloat(row[c + 1]) || result["Tổng số"];
+            } else if (cellText.includes("đang giải quyết")) {
+                result["Đang giải quyết"] = parseFloat(row[c + 1]) || result["Đang giải quyết"];
+            } else if (cellText.includes("đã giải quyết")) {
+                result["Đã giải quyết"] = parseFloat(row[c + 1]) || result["Đã giải quyết"];
+            } else if (cellText.includes("trực tuyến") || cellText.includes("truc tuyen")) {
+                result["Nộp trực tuyến"] = parseFloat(row[c + 1]) || result["Nộp trực tuyến"];
             }
-        });
-
-        document.getElementById("dmStatus").innerText = `Đã cập nhật danh mục mới (${updatedCount} TTHC)`;
-        document.getElementById("dmStatus").style.background = "#d4edda";
-        document.getElementById("dmStatus").style.color = "#155724";
-    }
-
-    // Đọc file Excel từ các ô input
-    async function readExcelFile(fileInputId) {
-        const input = document.getElementById(fileInputId);
-        if (!input.files || input.files.length === 0) return [];
-        
-        const file = input.files[0];
-        const data = await file.arrayBuffer();
-        const workbook = XLSX.read(data, { type: 'array' });
-        const firstSheetName = workbook.SheetNames[0];
-        return XLSX.utils.sheet_to_json(workbook.Sheets[firstSheetName], { defval: "" });
-    }
-
-    // Bổ sung cột Lĩnh vực và Mức độ vào dữ liệu thô
-    function enrichDataWithLinhVuc(rawData) {
-        return rawData.map(row => {
-            let maTTHC = (row["Mã TTHC"] || row["Mã thủ tục"] || "").toString().trim();
-            let tenTTHC = (row["Tên TTHC"] || row["Tên thủ tục hành chính"] || "").toString().trim();
-            
-            // Tìm thông tin Lĩnh vực & Mức độ từ danh mục
-            let matchInfo = DANH_MUC_LINH_VUC[maTTHC] || DANH_MUC_LINH_VUC[tenTTHC];
-            
-            let linhVucGoc = row["Lĩnh vực"] || (matchInfo ? matchInfo.linhVuc : "Khác");
-            let mucDoGoc = row["Mức độ"] || (matchInfo ? matchInfo.mucDo : "Một phần");
-
-            // Tạo object mới chứa cột Lĩnh vực & Mức độ
-            return {
-                ...row,
-                "Lĩnh vực": linhVucGoc,
-                "Mức độ": mucDoGoc
-            };
-        });
-    }
-
-    // Hàm xử lý chính khi ấn nút xuất
-    async function processAndExport() {
-        const sheetConfigs = [
-            { id: "file1", name: "Trong kỳ trực tuyến" },
-            { id: "file2", name: "Trong kỳ trực tiếp" },
-            { id: "file3", name: "Kỳ trước chuyển sang" },
-            { id: "file4", name: "Đã GQ đúng hạn" },
-            { id: "file5", name: "Đã GQ quá hạn" },
-            { id: "file6", name: "Rút hồ sơ - Trả lại" },
-            { id: "file7", name: "Đang GQ trong hạn" },
-            { id: "file8", name: "Đang GQ quá hạn" }
-        ];
-
-        const newWorkbook = XLSX.utils.book_new();
-        let totalRecords = 0;
-
-        for (const config of sheetConfigs) {
-            let rawData = await readExcelFile(config.id);
-            let processedData = [];
-            
-            if (rawData.length > 0) {
-                totalRecords += rawData.length;
-                processedData = enrichDataWithLinhVuc(rawData);
-            }
-
-            // Tạo sheet ngay cả khi không chọn file (để đảm bảo đủ 8 sheet đúng tên)
-            let worksheet = XLSX.utils.json_to_sheet(processedData);
-            XLSX.utils.book_append_sheet(newWorkbook, worksheet, config.name);
         }
-
-        if (totalRecords === 0) {
-            alert("Anh chưa đính kèm file số liệu nào trong 8 biểu!");
-            return;
-        }
-
-        // Tải về file kết quả
-        XLSX.writeFile(newWorkbook, "2026_Mau_Bieu_thong_ke_bao_cao_Quy_hoan_thien.xlsx");
     }
+
+    return result;
+}
+
+function generateExcelOutput(data, exportType) {
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    
+    let sheetName = exportType === "tong_hop" ? "Tong_Hop" : "07a_BTP_KSTT";
+    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+
+    let outputFileName = `${sheetName}_KetQua_${new Date().toISOString().slice(0,10)}.xlsx`;
+    XLSX.writeFile(workbook, outputFileName);
+}
 </script>
 
 </body>
