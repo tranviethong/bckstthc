@@ -1,335 +1,630 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ thống Tổng hợp Báo cáo KSTTHC - Xã Đan Hải</title>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #eef2f5; color: #333; }
-        .container { max-width: 960px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-        h2 { color: #0056b3; text-align: center; margin-top: 0; text-transform: uppercase; font-size: 22px; }
-        .sub-title { text-align: center; color: #666; font-size: 14px; margin-bottom: 25px; }
-        
-        .section-box { border: 1px solid #cce5ff; background-color: #f8fbfd; border-radius: 8px; padding: 15px 20px; margin-bottom: 20px; }
-        .section-title { font-weight: bold; color: #004085; margin-bottom: 10px; font-size: 15px; display: flex; align-items: center; justify-content: space-between; }
-        
-        .grid-files { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .form-group { background: #fff; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 6px; }
-        .form-group label { font-weight: 600; font-size: 13px; display: block; margin-bottom: 6px; color: #495057; }
-        input[type="file"] { width: 100%; font-size: 12px; }
-        
-        .btn-container { text-align: center; margin-top: 25px; }
-        .btn-submit { background-color: #28a745; color: white; border: none; padding: 14px 35px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: all 0.2s; box-shadow: 0 3px 6px rgba(40,167,69,0.3); }
-        .btn-submit:hover { background-color: #218838; transform: translateY(-1px); }
-        .note-text { font-size: 12px; color: #6c757d; font-style: italic; margin-top: 4px; }
-        
-        .status-badge { display: inline-block; font-size: 11px; padding: 3px 8px; border-radius: 10px; background: #e2e8f0; color: #475569; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hệ thống Tổng hợp Báo cáo KSTTHC - Xã Đan Hải</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<style>
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #eef2f5; color: #333; }
+.container { max-width: 1000px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+h2 { color: #0056b3; text-align: center; margin-top: 0; text-transform: uppercase; font-size: 22px; }
+.sub-title { text-align: center; color: #666; font-size: 14px; margin-bottom: 25px; }
+.section-box { border: 1px solid #cce5ff; background-color: #f8fbfd; border-radius: 8px; padding: 15px 20px; margin-bottom: 20px; }
+.section-title { font-weight: bold; color: #004085; margin-bottom: 10px; font-size: 15px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap:6px;}
+.form-group { background: #fff; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 6px; }
+.form-group label { font-weight: 600; font-size: 13px; display: block; margin-bottom: 6px; color: #495057; }
+input[type="file"] { width: 100%; font-size: 12px; }
+.btn-container { text-align: center; margin-top: 25px; }
+.btn-submit { background-color: #28a745; color: white; border: none; padding: 14px 35px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: all 0.2s; box-shadow: 0 3px 6px rgba(40,167,69,0.3); }
+.btn-submit:hover { background-color: #218838; transform: translateY(-1px); }
+.btn-secondary { background:#e9f2ff; color:#0056b3; border:1px solid #b6d4fe; padding:8px 14px; font-size:12px; font-weight:600; border-radius:6px; cursor:pointer; }
+.btn-secondary:hover { background:#d7e9ff; }
+.btn-danger { background:#fdeceb; color:#a12622; border:1px solid #f5c2c0; }
+.btn-danger:hover { background:#fbdedb; }
+.note-text { font-size: 12px; color: #6c757d; font-style: italic; margin-top: 6px; }
+.status-badge { display: inline-block; font-size: 11px; padding: 3px 10px; border-radius: 10px; background: #e2e8f0; color: #475569; font-weight:600; white-space:nowrap; }
+.checklist { margin-top:14px; display:grid; grid-template-columns: 1fr 1fr; gap:6px 16px; font-size:13px; }
+.chk-item { display:flex; align-items:center; gap:6px; padding:4px 6px; border-radius:5px; }
+.chk-ok { background:#eaf7ee; color:#1e7d34; }
+.chk-missing { background:#f4f5f7; color:#8a94a3; }
+.warn-box { background:#fff8e6; border:1px solid #ffeeba; color:#856404; border-radius:6px; padding:10px 14px; font-size:12.5px; margin-top:12px; }
+.log-box { margin-top:18px; background:#0b1220; color:#c8facc; font-family: Consolas, monospace; font-size:12.5px; padding:14px; border-radius:8px; max-height:260px; overflow:auto; white-space:pre-wrap; }
+table.dm-table { border-collapse:collapse; width:100%; font-size:12px; }
+table.dm-table th, table.dm-table td { border:1px solid #e2e8f0; padding:5px 8px; text-align:left; }
+table.dm-table th { background:#f1f5fb; position:sticky; top:0; }
+.unrecognized { color:#b02a37; }
+</style>
 </head>
 <body>
-
 <div class="container">
-    <h2>TỰ ĐỘNG TỔNG HỢP BÁO CÁO KSTTHC</h2>
-    <div class="sub-title">Ủy ban nhân dân xã Đan Hải - Hệ thống tổng hợp & chuẩn hóa dữ liệu báo cáo KSTTHC</div>
+<h2>TỰ ĐỘNG TỔNG HỢP BÁO CÁO KSTTHC</h2>
+<div class="sub-title">Trung tâm Phục vụ hành chính công xã Đan Hải — Hệ thống tổng hợp &amp; chuẩn hóa dữ liệu báo cáo KSTTHC</div>
 
-    <!-- MỤC NẠP FILE DANH MỤC LĨNH VỰC -->
-    <div class="section-box" style="border-color: #ffeeba; background-color: #fff8e6;">
-        <div class="section-title" style="color: #856404;">
-            <span>📌 1. Danh mục Lĩnh vực & Mức độ TTHC</span>
-            <span class="status-badge" id="dmStatus">Đang kiểm tra danh mục...</span>
-        </div>
-        <div class="form-group" style="background: transparent; border: none; padding: 0;">
-            <label for="fileLinhVuc">Tải lên file Excel Danh mục Lĩnh vực (Chỉ chọn khi có thay đổi mới):</label>
-            <input type="file" id="fileLinhVuc" accept=".xlsx, .xls" onchange="loadCustomLinhVuc(this)">
-            <div class="note-text">* Khi tải file lên, danh mục sẽ được lưu cố định vào trình duyệt cho các lần sử dụng sau.</div>
-        </div>
-    </div>
+<!-- MỤC 1: DANH MỤC LĨNH VỰC (chỉ cập nhật khi có thay đổi) -->
+<div class="section-box" style="border-color:#ffeeba; background-color:#fff8e6;">
+  <div class="section-title" style="color:#856404;">
+    <span>📌 1. Danh mục Lĩnh vực &amp; Mức độ TTHC (chỉ tải lên khi có thay đổi)</span>
+    <span class="status-badge" id="dmStatus">Đang kiểm tra danh mục...</span>
+  </div>
+  <div class="form-group" style="background:transparent;border:none;padding:0;">
+    <label for="fileLinhVuc">Tải lên file Excel "Lĩnh vực" (chỉ chọn lại khi danh mục có thay đổi — rất ít khi xảy ra):</label>
+    <input type="file" id="fileLinhVuc" accept=".xlsx,.xls" onchange="loadDanhMuc(this)">
+    <div class="note-text">* Sau khi tải lên, danh mục được lưu cố định trong trình duyệt này (localStorage). Những lần xuất báo cáo sau <b>không cần</b> chọn lại mục này — chỉ đưa file dữ liệu ở Mục 2. Danh mục dùng để đối chiếu <b>Lĩnh vực</b> và <b>Mức độ</b> cho từng thủ tục theo Tên TTHC.</div>
+  </div>
+  <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+    <button type="button" class="btn-secondary" onclick="toggleDanhMucView()">👁 Xem danh mục hiện tại</button>
+    <button type="button" class="btn-secondary" onclick="downloadDanhMuc()">⬇ Tải xuống danh mục hiện tại (.xlsx)</button>
+    <button type="button" class="btn-secondary btn-danger" onclick="clearDanhMuc()">🗑 Xóa danh mục đã lưu</button>
+  </div>
+  <div id="dmPreview" style="display:none; margin-top:12px; max-height:340px; overflow:auto; border:1px solid #e2e8f0; border-radius:6px; background:#fff;"></div>
+</div>
 
-    <!-- MỤC NẠP 8 FILE BÁO CÁO SỐ LIỆU -->
-    <div class="section-box">
-        <div class="section-title">📁 2. Đính kèm 8 file số liệu báo cáo tải về từ hệ thống</div>
-        
-        <div class="grid-files">
-            <div class="form-group"><label>1. Biểu "Trong kỳ trực tuyến":</label><input type="file" id="file1" accept=".xlsx, .xls"></div>
-            <div class="form-group"><label>2. Biểu "Trong kỳ trực tiếp":</label><input type="file" id="file2" accept=".xlsx, .xls"></div>
-            <div class="form-group"><label>3. Biểu "Kỳ trước chuyển sang":</label><input type="file" id="file3" accept=".xlsx, .xls"></div>
-            <div class="form-group"><label>4. Biểu "Đã GQ đúng hạn":</label><input type="file" id="file4" accept=".xlsx, .xls"></div>
-            <div class="form-group"><label>5. Biểu "Đã GQ quá hạn":</label><input type="file" id="file5" accept=".xlsx, .xls"></div>
-            <div class="form-group"><label>6. Biểu "Rút hồ sơ / Trả lại":</label><input type="file" id="file6" accept=".xlsx, .xls"></div>
-            <div class="form-group"><label>7. Biểu "Đang GQ trong hạn":</label><input type="file" id="file7" accept=".xlsx, .xls"></div>
-            <div class="form-group"><label>8. Biểu "Đang GQ quá hạn":</label><input type="file" id="file8" accept=".xlsx, .xls"></div>
-        </div>
-    </div>
+<!-- MỤC 2: FILE DỮ LIỆU ĐẦU VÀO -->
+<div class="section-box">
+  <div class="section-title">📁 2. Đính kèm file dữ liệu đầu vào (từ file .rar tải về hệ thống)</div>
+  <div class="form-group" style="background:transparent;border:none;padding:0;">
+    <label for="fileInputs">Chọn nhiều file cùng lúc (có thể chọn thẳng file .zip, hoặc bôi đen toàn bộ các file .xlsx sau khi giải nén):</label>
+    <input type="file" id="fileInputs" accept=".xlsx,.xls,.zip" multiple onchange="handleInputFiles(this.files)">
+    <div class="note-text">* Trình duyệt không đọc trực tiếp được file <b>.rar</b>. Anh chỉ cần giải nén file .rar 1 lần (chuột phải → Extract), rồi bấm vào thư mục vừa giải nén, bấm Ctrl+A để chọn tất cả các file .xlsx bên trong và tải lên cùng lúc. Hệ thống tự nhận diện từng file theo nội dung bên trong (không phụ thuộc tên file), nên chọn thiếu/thừa/nhầm thứ tự đều không sao.</div>
+  </div>
+  <div id="fileChecklist" class="checklist"></div>
+  <div id="unrecognizedBox"></div>
+</div>
 
-    <div class="btn-container">
-        <button type="button" class="btn-submit" onclick="processAndExport()">XUẤT FILE BÁO CÁO EXCEL HOÀN CHỈNH</button>
-    </div>
+<div class="btn-container">
+  <button type="button" class="btn-submit" onclick="processAndExport()">XUẤT FILE BÁO CÁO EXCEL HOÀN CHỈNH</button>
+</div>
+<div id="logBox" class="log-box" style="display:none;"></div>
 </div>
 
 <script>
-    let DANH_MUC_LINH_VUC = {};
+/* =========================================================================
+   CẤU HÌNH DANH MỤC LOẠI DỮ LIỆU (13 loại biểu chi tiết hồ sơ)
+   Hệ thống nhận diện MỖI FILE dựa trên dòng "Cột: ..." ghi bên trong file
+   (không phụ thuộc tên file), có fallback theo tên file nếu thiếu dòng đó.
+   ========================================================================= */
+const CATS = [
+  {key:'tiepNhan_TongSo',     label:'Nhận giải quyết — Tổng số'},
+  {key:'tiepNhan_TrucTiep',   label:'Nhận giải quyết — Nộp trực tiếp'},
+  {key:'tiepNhan_TrucTuyen',  label:'Nhận giải quyết — Nộp trực tuyến'},
+  {key:'tiepNhan_KyTruoc',    label:'Nhận giải quyết — Số kỳ trước chuyển qua'},
+  {key:'dangGQ_TongSo',       label:'Đang giải quyết — Tổng số'},
+  {key:'dangGQ_ChuaDenHan',   label:'Đang giải quyết — Chưa đến hạn'},
+  {key:'dangGQ_QuaHan',       label:'Đang giải quyết — Quá hạn'},
+  {key:'daGQ_TongSo',         label:'Đã giải quyết — Tổng số'},
+  {key:'daGQ_DungTruocHan',   label:'Đã giải quyết — Đúng và trước hạn'},
+  {key:'daGQ_QuaHan',         label:'Đã giải quyết — Quá hạn'},
+  {key:'hoSo_ChoTiepNhan',    label:'Hồ sơ chờ tiếp nhận'},
+  {key:'hoSo_TuChoi',         label:'Hồ sơ từ chối'},
+  {key:'hoSo_YeuCauRut',      label:'Hồ sơ yêu cầu rút'},
+];
 
-    window.onload = function() {
-        let savedDM = localStorage.getItem("DANH_MUC_KSTTHC_DANHAI");
-        if (savedDM) {
-            DANH_MUC_LINH_VUC = JSON.parse(savedDM);
-            let count = Object.keys(DANH_MUC_LINH_VUC).length;
-            updateDMStatus(`Đã lưu danh mục trước đó (${count} TTHC)`, "#d4edda", "#155724");
-        } else {
-            updateDMStatus("Chưa có danh mục (sẽ tự động dùng Lĩnh vực sẵn có trong file)", "#e2e8f0", "#475569");
-        }
-    };
+function detectCategory(label, fileName){
+  const s = ((label||'') + ' ' + (fileName||'')).toLowerCase();
+  const has = (...kws) => kws.every(k=>s.includes(k));
+  if(has('chờ tiếp nhận')) return 'hoSo_ChoTiepNhan';
+  if(has('từ chối')) return 'hoSo_TuChoi';
+  if(has('yêu cầu rút') || (has('rút') && has('hồ sơ'))) return 'hoSo_YeuCauRut';
+  if(has('nhận giải quyết') && has('tổng số')) return 'tiepNhan_TongSo';
+  if(has('nhận giải quyết') && has('trực tiếp')) return 'tiepNhan_TrucTiep';
+  if(has('nhận giải quyết') && has('trực tuyến')) return 'tiepNhan_TrucTuyen';
+  if(has('nhận giải quyết') && has('kỳ trước')) return 'tiepNhan_KyTruoc';
+  if(has('đang giải quyết') && has('tổng số')) return 'dangGQ_TongSo';
+  if(has('đang giải quyết') && (has('chưa đến hạn')||has('trong hạn'))) return 'dangGQ_ChuaDenHan';
+  if(has('đang giải quyết') && has('quá hạn')) return 'dangGQ_QuaHan';
+  if(has('đã giải quyết') && has('tổng số')) return 'daGQ_TongSo';
+  if(has('đã giải quyết') && (has('đúng')||has('trước hạn'))) return 'daGQ_DungTruocHan';
+  if(has('đã giải quyết') && has('quá hạn')) return 'daGQ_QuaHan';
+  return null;
+}
 
-    function updateDMStatus(text, bg, color) {
-        const badge = document.getElementById("dmStatus");
-        badge.innerText = text;
-        badge.style.background = bg;
-        badge.style.color = color;
+/* =========================================================================
+   TIỆN ÍCH CHUNG
+   ========================================================================= */
+function normTen(s){ if(!s) return ''; return s.toString().replace(/\s+/g,' ').trim().replace(/[.,;]+$/,''); }
+function stripParen(s){ return s.replace(/\s*\([^)]*\)\s*$/, '').trim(); }
+
+function findHeaderRow(matrix, mustHave){
+  for(let i=0;i<Math.min(matrix.length,15);i++){
+    const rowStr = (matrix[i]||[]).join(' ').toLowerCase();
+    if(mustHave.every(k=>rowStr.includes(k))) return i;
+  }
+  return -1;
+}
+function headerIndexMap(headerRow){
+  const map = {};
+  (headerRow||[]).forEach((cell,idx)=>{
+    const c = (cell||'').toString().trim().toLowerCase();
+    if(c) map[c] = idx; // nếu trùng tên cột, cột nằm bên phải sẽ ghi đè (ưu tiên cột đầy đủ hơn)
+  });
+  return map;
+}
+function parseVNDate(str){
+  if(!str) return null;
+  const m = String(str).trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if(!m) return null;
+  return new Date(Number(m[3]), Number(m[2])-1, Number(m[1]));
+}
+function classifyDungTruocHan(ngayHenTra, ngayHoanThanh){
+  const d1 = parseVNDate(ngayHoanThanh);
+  const d2 = parseVNDate(ngayHenTra);
+  if(!d1 || !d2) return 'dung'; // thiếu dữ liệu ngày -> mặc định tính Đúng hạn (không suy diễn bất lợi)
+  if(d1.getTime() < d2.getTime()) return 'truoc';
+  if(d1.getTime() === d2.getTime()) return 'dung';
+  return 'dung'; // hồ sơ đã được hệ thống nguồn xếp vào nhóm "Đúng và trước hạn" -> luôn giữ trong nhóm đúng hạn
+}
+function fmtDate(d){
+  if(!d) return '';
+  const dd = String(d.getDate()).padStart(2,'0');
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  return `${dd}/${mm}/${d.getFullYear()}`;
+}
+function todayVN(){ return fmtDate(new Date()); }
+
+function log(msg){
+  const box = document.getElementById('logBox');
+  box.style.display = 'block';
+  box.textContent += msg + "\n";
+  box.scrollTop = box.scrollHeight;
+}
+function clearLog(){
+  const box = document.getElementById('logBox');
+  box.textContent = '';
+  box.style.display = 'none';
+}
+
+/* =========================================================================
+   MỤC 1: DANH MỤC LĨNH VỰC & MỨC ĐỘ (lưu cố định trong trình duyệt)
+   ========================================================================= */
+const DM_KEY = 'KSTTHC_DANHAI_DANHMUC_LINHVUC_V3';
+let DANH_MUC = [];               // [{ten, linhVuc, mucDo}]
+let DANH_MUC_MAP = new Map();    // normalized ten -> entry
+let DANH_MUC_META = {fileName:'', uploadedAt:''};
+
+function buildDanhMucMap(){
+  DANH_MUC_MAP = new Map();
+  DANH_MUC.forEach(e=>{
+    const k1 = e.ten;
+    if(k1 && !DANH_MUC_MAP.has(k1)) DANH_MUC_MAP.set(k1, e);
+    const k2 = stripParen(k1);
+    if(k2 && !DANH_MUC_MAP.has(k2)) DANH_MUC_MAP.set(k2, e);
+    const k1l = k1.toLowerCase();
+    if(k1l && !DANH_MUC_MAP.has(k1l)) DANH_MUC_MAP.set(k1l, e);
+  });
+}
+function lookupTTHC(ten){
+  const k1 = normTen(ten);
+  if(DANH_MUC_MAP.has(k1)) return DANH_MUC_MAP.get(k1);
+  const k2 = stripParen(k1);
+  if(DANH_MUC_MAP.has(k2)) return DANH_MUC_MAP.get(k2);
+  const k1l = k1.toLowerCase();
+  if(DANH_MUC_MAP.has(k1l)) return DANH_MUC_MAP.get(k1l);
+  return null;
+}
+
+function updateDmStatus(){
+  const badge = document.getElementById('dmStatus');
+  if(DANH_MUC.length===0){
+    badge.textContent = 'Chưa có danh mục — vui lòng tải lên trước khi xuất báo cáo';
+    badge.style.background = '#fdeceb'; badge.style.color = '#a12622';
+  } else {
+    const nLV = new Set(DANH_MUC.map(e=>e.linhVuc).filter(Boolean)).size;
+    badge.textContent = `Đã lưu: ${DANH_MUC.length} TTHC / ${nLV} lĩnh vực (cập nhật ${DANH_MUC_META.uploadedAt||''})`;
+    badge.style.background = '#d4edda'; badge.style.color = '#155724';
+  }
+}
+
+window.addEventListener('load', function(){
+  try{
+    const raw = localStorage.getItem(DM_KEY);
+    if(raw){
+      const obj = JSON.parse(raw);
+      DANH_MUC = obj.entries || [];
+      DANH_MUC_META = {fileName: obj.fileName||'', uploadedAt: obj.uploadedAt||''};
+      buildDanhMucMap();
     }
+  }catch(e){ console.warn('Không đọc được danh mục đã lưu:', e); }
+  updateDmStatus();
+});
 
-    function cleanLinhVucName(name) {
-        if (!name) return "";
-        return name.toString().replace(/\s*\(\d+\)$/, '').trim();
+async function loadDanhMuc(input){
+  if(!input.files || input.files.length===0) return;
+  const file = input.files[0];
+  try{
+    const data = await file.arrayBuffer();
+    const workbook = XLSX.read(data, {type:'array'});
+    const ws = workbook.Sheets[workbook.SheetNames[0]];
+    const matrix = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+    const headerIdx = findHeaderRow(matrix, ['tên tthc','mức độ']);
+    if(headerIdx<0){ alert('Không tìm thấy dòng tiêu đề (cần có cột "Tên TTHC" và "Mức độ") trong file vừa chọn.'); return; }
+    const header = matrix[headerIdx].map(h=>(h||'').toString().trim().toLowerCase());
+    let tenCol=-1, mucDoCol=-1, linhVucCol=-1;
+    header.forEach((h,idx)=>{
+      if(h.startsWith('tên tthc')) tenCol = idx;
+      if(h.startsWith('mức độ')) mucDoCol = idx;
+      if(h.startsWith('lĩnh vực')) linhVucCol = idx; // cột "Lĩnh vực" nằm bên phải nhất sẽ được dùng (cột đầy đủ từng dòng)
+    });
+    if(tenCol<0 || mucDoCol<0 || linhVucCol<0){
+      alert('File danh mục thiếu cột bắt buộc (Tên TTHC / Mức độ / Lĩnh vực). Vui lòng kiểm tra lại file.');
+      return;
     }
-
-    async function loadCustomLinhVuc(input) {
-        if (!input.files || input.files.length === 0) return;
-        
-        const file = input.files[0];
-        const data = await file.arrayBuffer();
-        const workbook = XLSX.read(data, { type: 'array' });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        
-        const rawMatrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
-        let headerRowIndex = findHeaderRowIndex(rawMatrix);
-        const rawData = XLSX.utils.sheet_to_json(sheet, { range: headerRowIndex, defval: "" });
-
-        let updatedCount = 0;
-        let lastLinhVuc = "";
-
-        rawData.forEach(row => {
-            let lvGoc = getFieldValue(row, ["Lĩnh vực (rút gọn, dùng để tra cứu)", "Lĩnh vực", "Tên lĩnh vực"]);
-            if (lvGoc) {
-                lastLinhVuc = cleanLinhVucName(lvGoc);
-            }
-
-            let maTTHC = getFieldValue(row, ["Mã TTHC (tra cứu)", "Mã TTHC", "Mã thủ tục"]).trim();
-            let tenTTHC = getFieldValue(row, ["Tên TTHC", "Tên thủ tục"]).trim();
-            let mucDo = getFieldValue(row, ["Mức độ", "Mức độ DVC"]) || "Một phần";
-
-            let infoObj = { linhVuc: lastLinhVuc, mucDo: mucDo.trim() };
-
-            if (maTTHC) {
-                DANH_MUC_LINH_VUC[maTTHC] = infoObj;
-                updatedCount++;
-            }
-            if (tenTTHC) {
-                DANH_MUC_LINH_VUC[tenTTHC] = infoObj;
-                updatedCount++;
-            }
-        });
-
-        localStorage.setItem("DANH_MUC_KSTTHC_DANHAI", JSON.stringify(DANH_MUC_LINH_VUC));
-        updateDMStatus(`Đã cập nhật & lưu danh mục mới (${updatedCount} mục tra cứu)`, "#d4edda", "#155724");
+    const entries = [];
+    for(let r=headerIdx+1;r<matrix.length;r++){
+      const row = matrix[r];
+      const ten = row[tenCol];
+      if(!ten) continue;
+      entries.push({
+        ten: normTen(ten),
+        linhVuc: (row[linhVucCol]||'').toString().trim(),
+        mucDo: (row[mucDoCol]||'Một phần').toString().trim(),
+      });
     }
+    if(entries.length===0){ alert('Không đọc được dữ liệu nào từ file danh mục.'); return; }
 
-    function findHeaderRowIndex(matrix) {
-        for (let i = 0; i < Math.min(matrix.length, 15); i++) {
-            let rowStr = matrix[i].join(" ").toLowerCase();
-            if (rowStr.includes("mã tthc") || rowStr.includes("mã thủ tục") || rowStr.includes("tên thủ tục") || rowStr.includes("tên tthc") || rowStr.includes("stt")) {
-                return i;
-            }
-        }
-        return 0;
+    DANH_MUC = entries;
+    DANH_MUC_META = {fileName: file.name, uploadedAt: todayVN()};
+    buildDanhMucMap();
+    localStorage.setItem(DM_KEY, JSON.stringify({entries: DANH_MUC, fileName: file.name, uploadedAt: DANH_MUC_META.uploadedAt}));
+    updateDmStatus();
+    alert(`Đã cập nhật danh mục: ${entries.length} thủ tục / ${new Set(entries.map(e=>e.linhVuc)).size} lĩnh vực.\nDanh mục đã được lưu cố định — không cần chọn lại file này cho các lần xuất báo cáo sau.`);
+    input.value = '';
+  }catch(e){
+    console.error(e);
+    alert('Lỗi khi đọc file danh mục: ' + e.message);
+  }
+}
+
+function toggleDanhMucView(){
+  const box = document.getElementById('dmPreview');
+  if(box.style.display==='block'){ box.style.display='none'; return; }
+  if(DANH_MUC.length===0){ box.style.display='none'; alert('Chưa có danh mục nào được lưu.'); return; }
+  const byLV = {};
+  DANH_MUC.forEach(e=>{
+    const lv = e.linhVuc || '(chưa rõ)';
+    byLV[lv] = byLV[lv] || {count:0, tenList:[]};
+    byLV[lv].count++;
+    if(byLV[lv].tenList.length<3) byLV[lv].tenList.push(e.ten);
+  });
+  const lvNames = Object.keys(byLV).sort((a,b)=>a.localeCompare(b,'vi'));
+  let html = `<div style="padding:10px 12px; font-size:12.5px; color:#495057;">Nguồn: <b>${DANH_MUC_META.fileName||''}</b> — cập nhật ${DANH_MUC_META.uploadedAt||''} — ${DANH_MUC.length} thủ tục / ${lvNames.length} lĩnh vực</div>`;
+  html += '<table class="dm-table"><thead><tr><th>#</th><th>Lĩnh vực</th><th>Số TTHC</th><th>Ví dụ thủ tục</th></tr></thead><tbody>';
+  lvNames.forEach((lv,i)=>{
+    html += `<tr><td>${i+1}</td><td>${lv}</td><td>${byLV[lv].count}</td><td>${byLV[lv].tenList.join(' • ')}${byLV[lv].count>3?' …':''}</td></tr>`;
+  });
+  html += '</tbody></table>';
+  box.innerHTML = html;
+  box.style.display = 'block';
+}
+
+function downloadDanhMuc(){
+  if(DANH_MUC.length===0){ alert('Chưa có danh mục nào được lưu.'); return; }
+  const data = DANH_MUC.map(e=>({'Tên TTHC': e.ten, 'Lĩnh vực': e.linhVuc, 'Mức độ': e.mucDo}));
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Danh muc');
+  XLSX.writeFile(wb, `DanhMuc_LinhVuc_MucDo_DanHai_${todayVN().replace(/\//g,'-')}.xlsx`);
+}
+
+function clearDanhMuc(){
+  if(!confirm('Xóa danh mục Lĩnh vực đã lưu trong trình duyệt này? Lần xuất báo cáo tiếp theo sẽ cần tải lại file danh mục.')) return;
+  localStorage.removeItem(DM_KEY);
+  DANH_MUC = []; DANH_MUC_MAP = new Map(); DANH_MUC_META = {fileName:'', uploadedAt:''};
+  updateDmStatus();
+  document.getElementById('dmPreview').style.display = 'none';
+}
+
+/* =========================================================================
+   MỤC 2: FILE DỮ LIỆU ĐẦU VÀO
+   ========================================================================= */
+let PENDING_FILES = [];   // File[] người dùng vừa chọn (có thể gồm .zip)
+let RESOLVED_FILES = [];  // [{name, arrayBuffer}] sau khi giải nén .zip (nếu có)
+
+async function gatherWorkbookFiles(fileList){
+  const out = [];
+  for(const file of fileList){
+    const lower = file.name.toLowerCase();
+    if(lower.endsWith('.zip')){
+      const buf = await file.arrayBuffer();
+      const zip = await JSZip.loadAsync(buf);
+      for(const relPath of Object.keys(zip.files)){
+        const entry = zip.files[relPath];
+        if(entry.dir) continue;
+        if(!/\.(xlsx|xls)$/i.test(relPath)) continue;
+        const ab = await entry.async('arraybuffer');
+        out.push({name: relPath.split('/').pop(), arrayBuffer: ab});
+      }
+    } else if(/\.(xlsx|xls)$/i.test(lower)){
+      const ab = await file.arrayBuffer();
+      out.push({name: file.name, arrayBuffer: ab});
     }
+  }
+  return out;
+}
 
-    function getFieldValue(row, possibleNames) {
-        for (let key in row) {
-            let cleanKey = key.toString().trim().toLowerCase();
-            for (let name of possibleNames) {
-                if (cleanKey === name.toLowerCase()) {
-                    return row[key] ? row[key].toString() : "";
-                }
-            }
-        }
-        return "";
-    }
+function extractMeta(matrix){
+  let label=null, kyFrom=null, kyTo=null, donVi=null;
+  for(let i=0;i<Math.min(matrix.length,8);i++){
+    const cell = (matrix[i] && matrix[i][0]!==undefined) ? matrix[i][0].toString() : '';
+    if(!label){ const m = cell.match(/^Cột:\s*(.+)$/i); if(m) label = m[1].trim(); }
+    if(!donVi){ const m = cell.match(/^Đơn vị:\s*(.+)$/i); if(m) donVi = m[1].trim(); }
+    if(!kyFrom){ const m = cell.match(/Kỳ:\s*([\d\/]+)\s*[—\-–]+\s*([\d\/]+)/i); if(m){ kyFrom=m[1]; kyTo=m[2]; } }
+  }
+  return {label, kyFrom, kyTo, donVi};
+}
 
-    async function readExcelFile(fileInputId) {
-        const input = document.getElementById(fileInputId);
-        if (!input.files || input.files.length === 0) return [];
-        
-        const file = input.files[0];
-        const data = await file.arrayBuffer();
-        const workbook = XLSX.read(data, { type: 'array' });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+async function handleInputFiles(fileList){
+  PENDING_FILES = Array.from(fileList||[]);
+  const checklistEl = document.getElementById('fileChecklist');
+  const unrecEl = document.getElementById('unrecognizedBox');
+  checklistEl.innerHTML = '<div class="note-text">Đang nhận diện file...</div>';
+  unrecEl.innerHTML = '';
+  if(PENDING_FILES.length===0){ checklistEl.innerHTML=''; RESOLVED_FILES=[]; return; }
 
-        const rawMatrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
-        let headerRowIndex = findHeaderRowIndex(rawMatrix);
+  RESOLVED_FILES = await gatherWorkbookFiles(PENDING_FILES);
+  const foundNames = {};
+  const unrecognized = [];
+  for(const f of RESOLVED_FILES){
+    try{
+      const wb = XLSX.read(f.arrayBuffer, {type:'array'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const matrix = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+      const meta = extractMeta(matrix);
+      const cat = detectCategory(meta.label, f.name);
+      f._cat = cat; f._meta = meta;
+      if(cat){ foundNames[cat] = f.name; } else { unrecognized.push(f.name); }
+    }catch(e){ f._cat=null; unrecognized.push(f.name + ' (lỗi đọc file)'); }
+  }
 
-        return XLSX.utils.sheet_to_json(sheet, { range: headerRowIndex, defval: "" });
-    }
+  checklistEl.innerHTML = CATS.map(c=>{
+    const ok = !!foundNames[c.key];
+    return `<div class="chk-item ${ok?'chk-ok':'chk-missing'}">${ok?'✅':'⬜'} ${c.label}${ok? ' — '+foundNames[c.key] : ''}</div>`;
+  }).join('');
 
-    function enrichDataWithLinhVuc(rawData) {
-        return rawData.map(row => {
-            let maTTHC = getFieldValue(row, ["Mã TTHC", "Mã thủ tục"]).trim();
-            let tenTTHC = getFieldValue(row, ["Tên TTHC", "Tên thủ tục hành chính", "Tên thủ tục"]).trim();
-            let fileLinhVuc = getFieldValue(row, ["Lĩnh vực", "Tên lĩnh vực"]).trim();
+  if(unrecognized.length>0){
+    unrecEl.innerHTML = `<div class="warn-box">⚠ Không nhận diện được ${unrecognized.length} file (sẽ bị bỏ qua khi xuất báo cáo):<br>${unrecognized.join('<br>')}</div>`;
+  }
+}
 
-            let matchInfo = DANH_MUC_LINH_VUC[maTTHC] || DANH_MUC_LINH_VUC[tenTTHC];
-            
-            // ƯU TIÊN LẤY TỪ FILE SỐ LIỆU -> NẾU RỖNG MỚI LẤY TỪ DANH MỤC
-            let finalLinhVuc = cleanLinhVucName(fileLinhVuc || (matchInfo ? matchInfo.linhVuc : ""));
-            let finalMucDo = getFieldValue(row, ["Mức độ", "Mức độ DVC"]).trim() || (matchInfo ? matchInfo.mucDo : "Một phần");
+/* =========================================================================
+   ĐỌC 1 FILE CHI TIẾT HỒ SƠ (định dạng chung cho cả 13 loại biểu)
+   ========================================================================= */
+function parseDetailWorkbook(f){
+  const wb = XLSX.read(f.arrayBuffer, {type:'array'});
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const matrix = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+  const meta = f._meta || extractMeta(matrix);
+  const headerIdx = findHeaderRow(matrix, ['mã hồ sơ','tên tthc']);
+  if(headerIdx<0) return {meta, rows:[]};
+  const hmap = headerIndexMap(matrix[headerIdx]);
+  const col = (names)=>{ for(const n of names) if(hmap[n]!==undefined) return hmap[n]; return -1; };
+  const cMaHoSo = col(['mã hồ sơ']);
+  const cMaTTHC = col(['mã tthc']);
+  const cTenTTHC = col(['tên tthc']);
+  const cNgayNop = col(['ngày nộp']);
+  const cNgayHenTra = col(['ngày hẹn trả']);
+  const cNgayHoanThanh = col(['ngày hoàn thành']);
+  const cTrangThai = col(['trạng thái']);
 
-            return {
-                ...row,
-                "Lĩnh vực": finalLinhVuc,
-                "Mức độ": finalMucDo
-            };
-        });
-    }
+  const rows = [];
+  for(let r=headerIdx+1;r<matrix.length;r++){
+    const row = matrix[r];
+    const maHoSo = cMaHoSo>=0 ? row[cMaHoSo] : '';
+    if(!maHoSo) continue;
+    rows.push({
+      maHoSo: maHoSo.toString(),
+      maTTHC: cMaTTHC>=0 ? (row[cMaTTHC]||'').toString() : '',
+      tenTTHC: cTenTTHC>=0 ? (row[cTenTTHC]||'').toString() : '',
+      ngayNop: cNgayNop>=0 ? row[cNgayNop] : '',
+      ngayHenTra: cNgayHenTra>=0 ? row[cNgayHenTra] : '',
+      ngayHoanThanh: cNgayHoanThanh>=0 ? row[cNgayHoanThanh] : '',
+      trangThai: cTrangThai>=0 ? row[cTrangThai] : '',
+    });
+  }
+  return {meta, rows};
+}
 
-    async function processAndExport() {
-        const sheetConfigs = [
-            { id: "file1", name: "Trong kỳ trực tuyến" },
-            { id: "file2", name: "Trong kỳ trực tiếp" },
-            { id: "file3", name: "Kỳ trước chuyển sang" },
-            { id: "file4", name: "Đã GQ đúng hạn" },
-            { id: "file5", name: "Đã GQ quá hạn" },
-            { id: "file6", name: "Rút hồ sơ - Trả lại" },
-            { id: "file7", name: "Đang GQ trong hạn" },
-            { id: "file8", name: "Đang GQ quá hạn" }
-        ];
+/* =========================================================================
+   XỬ LÝ CHÍNH: gom nhóm theo lĩnh vực, tính Biểu 7a + Tổng hợp, xuất Excel
+   ========================================================================= */
+function emptyAgg(){
+  return {toanTrinh:0, motPhan:0, buuChinh:0, tiepTruc:0, kyTruoc:0,
+          daGQ_truoc:0, daGQ_dung:0, daGQ_qua:0,
+          dangGQ_trong:0, dangGQ_qua:0, rutTuChoi:0, choTiepNhan:0};
+}
 
-        const newWorkbook = XLSX.utils.book_new();
-        let totalRecords = 0;
-        let linhVucMap = {};
+async function processAndExport(){
+  clearLog();
+  if(DANH_MUC.length===0){
+    alert('Vui lòng tải lên file Danh mục Lĩnh vực (Mục 1) trước — chỉ cần làm một lần duy nhất.');
+    return;
+  }
+  if(!RESOLVED_FILES || RESOLVED_FILES.length===0){
+    alert('Vui lòng chọn file dữ liệu đầu vào (Mục 2).');
+    return;
+  }
 
-        for (const config of sheetConfigs) {
-            let rawData = await readExcelFile(config.id);
-            if (rawData.length > 0) {
-                totalRecords += rawData.length;
-                let processedData = enrichDataWithLinhVuc(rawData);
+  log('Bắt đầu xử lý ' + RESOLVED_FILES.length + ' file...');
+  const catRows = {};
+  let period = {from:null, to:null};
+  let donVi = null;
+  const unmatched = new Map();
 
-                processedData.forEach(row => {
-                    let lv = row["Lĩnh vực"];
-                    if (!lv) return; // Nếu hoàn toàn không có tên Lĩnh vực thì bỏ qua dòng rỗng
+  for(const f of RESOLVED_FILES){
+    const cat = f._cat;
+    if(!cat){ continue; }
+    const {meta, rows} = parseDetailWorkbook(f);
+    if(!period.from && meta.kyFrom){ period.from = meta.kyFrom; period.to = meta.kyTo; }
+    if(!donVi && meta.donVi){ donVi = meta.donVi; }
+    log(`- ${f.name}  →  ${CATS.find(c=>c.key===cat).label}  (${rows.length} hồ sơ)`);
 
-                    if (!linhVucMap[lv]) {
-                        linhVucMap[lv] = {
-                            trucTuyen: 0, trucTiep: 0, kyTruoc: 0,
-                            daGQ_DungHan: 0, daGQ_QuaHan: 0,
-                            rutHoSo: 0,
-                            dangGQ_TrongHan: 0, dangGQ_QuaHan: 0
-                        };
-                    }
+    const seen = new Set((catRows[cat]||[]).map(r=>r.maHoSo));
+    const enriched = [];
+    rows.forEach(row=>{
+      if(seen.has(row.maHoSo)) return; // tránh đếm trùng nếu lỡ chọn file 2 lần
+      seen.add(row.maHoSo);
+      const found = lookupTTHC(row.tenTTHC);
+      if(!found){
+        const k = normTen(row.tenTTHC);
+        unmatched.set(k, (unmatched.get(k)||0)+1);
+      }
+      enriched.push(Object.assign({}, row, {
+        loaiDuLieu: CATS.find(c=>c.key===cat).label,
+        linhVuc: found ? (found.linhVuc || '(Chưa xác định)') : '(Chưa xác định)',
+        mucDo: found ? (found.mucDo || 'Một phần') : 'Một phần',
+      }));
+    });
+    catRows[cat] = (catRows[cat]||[]).concat(enriched);
+  }
 
-                    if (config.id === "file1") linhVucMap[lv].trucTuyen++;
-                    else if (config.id === "file2") linhVucMap[lv].trucTiep++;
-                    else if (config.id === "file3") linhVucMap[lv].kyTruoc++;
-                    else if (config.id === "file4") linhVucMap[lv].daGQ_DungHan++;
-                    else if (config.id === "file5") linhVucMap[lv].daGQ_QuaHan++;
-                    else if (config.id === "file6") linhVucMap[lv].rutHoSo++;
-                    else if (config.id === "file7") linhVucMap[lv].dangGQ_TrongHan++;
-                    else if (config.id === "file8") linhVucMap[lv].dangGQ_QuaHan++;
-                });
+  if(unmatched.size>0){
+    log(`\n⚠ Có ${unmatched.size} tên TTHC không khớp danh mục (được xếp tạm vào "(Chưa xác định)"):`);
+    Array.from(unmatched.entries()).sort((a,b)=>b[1]-a[1]).forEach(([k,v])=>log(`   • [${v} hồ sơ] ${k}`));
+    log('→ Anh bổ sung các thủ tục này vào file Danh mục Lĩnh vực rồi tải lại (Mục 1) để lần sau khớp đầy đủ.');
+  }
 
-                let worksheet = XLSX.utils.json_to_sheet(processedData);
-                XLSX.utils.book_append_sheet(newWorkbook, worksheet, config.name);
-            }
-        }
+  // Danh sách lĩnh vực gốc (cố định, lấy từ danh mục đang lưu) + lĩnh vực "Chưa xác định" nếu có
+  const masterLinhVuc = Array.from(new Set(DANH_MUC.map(e=>e.linhVuc).filter(Boolean))).sort((a,b)=>a.localeCompare(b,'vi'));
+  if(unmatched.size>0) masterLinhVuc.push('(Chưa xác định)');
 
-        if (totalRecords === 0) {
-            alert("Anh chưa chọn file số liệu nào hoặc file chọn không có dữ liệu!");
-            return;
-        }
+  const agg = {};
+  masterLinhVuc.forEach(lv=>agg[lv]=emptyAgg());
+  function getAgg(lv){ if(!agg[lv]) agg[lv]=emptyAgg(); return agg[lv]; }
 
-        // 1. TẠO SHEET 07a_BTP_KSTT (Chỉ giữ Lĩnh vực có phát sinh hồ sơ)
-        let report07aData = [];
-        let stt = 1;
-        let grandTotal = {
-            tongNhan: 0, kyTruoc: 0, trucTiep: 0, trucTuyen: 0,
-            tongDaGQ: 0, daGQ_DungHan: 0, daGQ_QuaHan: 0,
-            tongDangGQ: 0, dangGQ_TrongHan: 0, dangGQ_QuaHan: 0, rutHoSo: 0
-        };
+  (catRows.tiepNhan_TrucTuyen||[]).forEach(r=>{
+    const a = getAgg(r.linhVuc);
+    if((r.mucDo||'').toLowerCase().includes('toàn trình')) a.toanTrinh++; else a.motPhan++;
+  });
+  (catRows.tiepNhan_TrucTiep||[]).forEach(r=>{ getAgg(r.linhVuc).tiepTruc++; });
+  (catRows.tiepNhan_KyTruoc||[]).forEach(r=>{ getAgg(r.linhVuc).kyTruoc++; });
+  (catRows.daGQ_DungTruocHan||[]).forEach(r=>{
+    const cls = classifyDungTruocHan(r.ngayHenTra, r.ngayHoanThanh);
+    const a = getAgg(r.linhVuc);
+    if(cls==='truoc') a.daGQ_truoc++; else a.daGQ_dung++;
+  });
+  (catRows.daGQ_QuaHan||[]).forEach(r=>{ getAgg(r.linhVuc).daGQ_qua++; });
+  (catRows.dangGQ_ChuaDenHan||[]).forEach(r=>{ getAgg(r.linhVuc).dangGQ_trong++; });
+  (catRows.dangGQ_QuaHan||[]).forEach(r=>{ getAgg(r.linhVuc).dangGQ_qua++; });
+  (catRows.hoSo_YeuCauRut||[]).forEach(r=>{ getAgg(r.linhVuc).rutTuChoi++; });
+  (catRows.hoSo_TuChoi||[]).forEach(r=>{ getAgg(r.linhVuc).rutTuChoi++; });
+  (catRows.hoSo_ChoTiepNhan||[]).forEach(r=>{ getAgg(r.linhVuc).choTiepNhan++; });
 
-        for (let lv in linhVucMap) {
-            let d = linhVucMap[lv];
-            let tongNhan = d.kyTruoc + d.trucTiep + d.trucTuyen;
-            let tongDaGQ = d.daGQ_DungHan + d.daGQ_QuaHan;
-            let tongDangGQ = d.dangGQ_TrongHan + d.dangGQ_QuaHan;
+  // ============ SHEET "Biểu 7a" ============
+  const bieu7aRows = [];
+  bieu7aRows.push(['STT','Lĩnh vực giải quyết','Số lượng hồ sơ tiếp nhận',null,null,null,null,null,'Số lượng hồ sơ đã giải quyết',null,null,null,'Số lượng hồ sơ đang giải quyết',null,null,'Hồ sơ rút/từ chối','Hồ sơ chờ tiếp nhận']);
+  bieu7aRows.push([null,null,'Tổng số','Trong kỳ',null,null,null,'Từ kỳ trước','Tổng số','Trước hạn','Đúng hạn','Quá hạn','Tổng số','Trong hạn','Quá hạn',null,null]);
+  bieu7aRows.push([null,null,null,'Trực tuyến toàn trình','Trực tuyến một phần','Qua dịch vụ bưu chính','Trực tiếp',null,null,null,null,null,null,null,null,null,null]);
+  bieu7aRows.push(['(1)','(2)','(3)=(4)+(5)+(6)+(7)+(8)','(4)','(5)','(6)','(7)','(8)','(9)=(10)+(11)+(12)','(10)','(11)','(12)','(13)=(14)+(15)','(14)','(15)','(16)','(17)']);
 
-            if (tongNhan === 0 && d.rutHoSo === 0 && tongDaGQ === 0 && tongDangGQ === 0) continue;
+  let stt = 1;
+  const grand = emptyAgg();
+  masterLinhVuc.forEach(lv=>{
+    const a = agg[lv];
+    Object.keys(grand).forEach(k=>grand[k]+=a[k]);
+    const tongTN = a.toanTrinh+a.motPhan+a.buuChinh+a.tiepTruc+a.kyTruoc;
+    const tongDaGQ = a.daGQ_truoc+a.daGQ_dung+a.daGQ_qua;
+    const tongDangGQ = a.dangGQ_trong+a.dangGQ_qua;
+    bieu7aRows.push([stt++, lv, tongTN, a.toanTrinh, a.motPhan, a.buuChinh, a.tiepTruc, a.kyTruoc,
+      tongDaGQ, a.daGQ_truoc, a.daGQ_dung, a.daGQ_qua, tongDangGQ, a.dangGQ_trong, a.dangGQ_qua,
+      a.rutTuChoi, a.choTiepNhan]);
+  });
+  const gTongTN = grand.toanTrinh+grand.motPhan+grand.buuChinh+grand.tiepTruc+grand.kyTruoc;
+  const gTongDaGQ = grand.daGQ_truoc+grand.daGQ_dung+grand.daGQ_qua;
+  const gTongDangGQ = grand.dangGQ_trong+grand.dangGQ_qua;
+  bieu7aRows.push([null,'TỔNG CỘNG', gTongTN, grand.toanTrinh, grand.motPhan, grand.buuChinh, grand.tiepTruc, grand.kyTruoc,
+    gTongDaGQ, grand.daGQ_truoc, grand.daGQ_dung, grand.daGQ_qua, gTongDangGQ, grand.dangGQ_trong, grand.dangGQ_qua,
+    grand.rutTuChoi, grand.choTiepNhan]);
 
-            report07aData.push({
-                "STT": stt++,
-                "Lĩnh vực": lv,
-                "Tổng số tiếp nhận": tongNhan,
-                "Kỳ trước chuyển sang": d.kyTruoc,
-                "Tiếp nhận trực tiếp": d.trucTiep,
-                "Tiếp nhận trực tuyến": d.trucTuyen,
-                "Tổng số đã giải quyết": tongDaGQ,
-                "Giải quyết đúng hạn": d.daGQ_DungHan,
-                "Giải quyết quá hạn": d.daGQ_QuaHan,
-                "Tổng số đang giải quyết": tongDangGQ,
-                "Đang giải quyết trong hạn": d.dangGQ_TrongHan,
-                "Đang giải quyết quá hạn": d.dangGQ_QuaHan,
-                "Rút / Trả lại / Từ chối": d.rutHoSo
-            });
+  // ============ SHEET "Tổng hợp" ============
+  const tyLeDungHan = gTongDaGQ>0 ? (grand.daGQ_truoc+grand.daGQ_dung)/gTongDaGQ : 0;
+  const tyLeQuaHan = gTongDaGQ>0 ? grand.daGQ_qua/gTongDaGQ : 0;
+  const tiepNhanTrucTuyen = grand.toanTrinh+grand.motPhan;
+  const tiepNhanTrongKy = tiepNhanTrucTuyen + grand.tiepTruc;
+  const tyLeTrucTuyen = tiepNhanTrongKy>0 ? tiepNhanTrucTuyen/tiepNhanTrongKy : 0;
 
-            grandTotal.tongNhan += tongNhan;
-            grandTotal.kyTruoc += d.kyTruoc;
-            grandTotal.trucTiep += d.trucTiep;
-            grandTotal.trucTuyen += d.trucTuyen;
-            grandTotal.tongDaGQ += tongDaGQ;
-            grandTotal.daGQ_DungHan += d.daGQ_DungHan;
-            grandTotal.daGQ_QuaHan += d.daGQ_QuaHan;
-            grandTotal.tongDangGQ += tongDangGQ;
-            grandTotal.dangGQ_TrongHan += d.dangGQ_TrongHan;
-            grandTotal.dangGQ_QuaHan += d.dangGQ_QuaHan;
-            grandTotal.rutHoSo += d.rutHoSo;
-        }
+  const tongHopRows = [
+    ['TỔNG HỢP CHUNG'],
+    [`Đơn vị: ${donVi || 'Xã Đan Hải'}`],
+    [`Thời gian: ${period.from||'?'} — ${period.to||'?'}`],
+    [`Ngày xuất báo cáo: ${todayVN()}`],
+    [],
+    ['Chỉ tiêu','Số liệu'],
+    ['Tổng số hồ sơ tiếp nhận', gTongTN],
+    ['  - Tiếp nhận trực tuyến', tiepNhanTrucTuyen],
+    ['  - Tiếp nhận trực tiếp / bưu chính', grand.tiepTruc+grand.buuChinh],
+    ['  - Kỳ trước chuyển qua', grand.kyTruoc],
+    ['  - Tiếp nhận mới trong kỳ (trực tuyến + trực tiếp)', tiepNhanTrongKy],
+    ['Tổng số hồ sơ đã giải quyết', gTongDaGQ],
+    ['  - Đã giải quyết trước hạn', grand.daGQ_truoc],
+    ['  - Đã giải quyết đúng hạn', grand.daGQ_dung],
+    ['  - Đã giải quyết quá hạn', grand.daGQ_qua],
+    ['Tổng số hồ sơ đang giải quyết', gTongDangGQ],
+    ['  - Đang giải quyết trong hạn', grand.dangGQ_trong],
+    ['  - Đang giải quyết quá hạn', grand.dangGQ_qua],
+    ['Hồ sơ chờ tiếp nhận (chưa tính vào tiếp nhận)', grand.choTiepNhan],
+    ['Hồ sơ rút / từ chối', grand.rutTuChoi],
+    ['Tỷ lệ hồ sơ đúng và trước hạn', (tyLeDungHan*100).toFixed(2)+'%'],
+    ['Tỷ lệ hồ sơ quá hạn', (tyLeQuaHan*100).toFixed(2)+'%'],
+    ['Tỷ lệ hồ sơ tiếp nhận trực tuyến (trong kỳ)', (tyLeTrucTuyen*100).toFixed(2)+'%'],
+    [],
+    ['CÁC LĨNH VỰC CÓ HỒ SƠ QUÁ HẠN'],
+    ['Lĩnh vực','Đã giải quyết quá hạn','Đang giải quyết quá hạn','Tổng quá hạn'],
+  ];
+  const slowList = masterLinhVuc
+    .map(lv=>({lv, da:agg[lv].daGQ_qua, dang:agg[lv].dangGQ_qua, tong:agg[lv].daGQ_qua+agg[lv].dangGQ_qua}))
+    .filter(x=>x.tong>0)
+    .sort((a,b)=>b.tong-a.tong);
+  slowList.forEach(x=> tongHopRows.push([x.lv, x.da, x.dang, x.tong]));
+  if(slowList.length===0) tongHopRows.push(['(Không có lĩnh vực nào phát sinh quá hạn)','','','']);
 
-        report07aData.unshift({
-            "STT": "",
-            "Lĩnh vực": "TỔNG CỘNG TOÀN XÃ",
-            "Tổng số tiếp nhận": grandTotal.tongNhan,
-            "Kỳ trước chuyển sang": grandTotal.kyTruoc,
-            "Tiếp nhận trực tiếp": grandTotal.trucTiep,
-            "Tiếp nhận trực tuyến": grandTotal.trucTuyen,
-            "Tổng số đã giải quyết": grandTotal.tongDaGQ,
-            "Giải quyết đúng hạn": grandTotal.daGQ_DungHan,
-            "Giải quyết quá hạn": grandTotal.daGQ_QuaHan,
-            "Tổng số đang giải quyết": grandTotal.tongDangGQ,
-            "Đang giải quyết trong hạn": grandTotal.dangGQ_TrongHan,
-            "Đang giải quyết quá hạn": grandTotal.dangGQ_QuaHan,
-            "Rút / Trả lại / Từ chối": grandTotal.rutHoSo
-        });
+  // ============ SHEET "Chi tiết" (toàn bộ hồ sơ, kèm Lĩnh vực/Mức độ đã đối chiếu) ============
+  const chiTietData = [];
+  CATS.forEach(c=>{
+    (catRows[c.key]||[]).forEach(r=>{
+      chiTietData.push({
+        'Loại dữ liệu': r.loaiDuLieu,
+        'Mã hồ sơ': r.maHoSo,
+        'Mã TTHC': r.maTTHC,
+        'Tên TTHC': r.tenTTHC,
+        'Lĩnh vực': r.linhVuc,
+        'Mức độ': r.mucDo,
+        'Ngày nộp': r.ngayNop,
+        'Ngày hẹn trả': r.ngayHenTra,
+        'Ngày hoàn thành': r.ngayHoanThanh,
+        'Trạng thái': r.trangThai,
+      });
+    });
+  });
 
-        let ws07a = XLSX.utils.json_to_sheet(report07aData);
-        XLSX.utils.book_append_sheet(newWorkbook, ws07a, "07a_BTP_KSTT");
+  // ============ SHEET "Danh mục đã dùng" (lưu vết để đối chiếu sau này) ============
+  const dmSnapshot = DANH_MUC.map(e=>({'Tên TTHC': e.ten, 'Lĩnh vực': e.linhVuc, 'Mức độ': e.mucDo}));
 
-        // 2. TẠO SHEET TỔNG HỢP CHUNG
-        let tongHopChungData = [{
-            "Đơn vị": "UBND xã Đan Hải",
-            "Tổng số hồ sơ tiếp nhận": grandTotal.tongNhan,
-            "Kỳ trước chuyển sang": grandTotal.kyTruoc,
-            "Nộp trực tiếp": grandTotal.trucTiep,
-            "Nộp trực tuyến": grandTotal.trucTuyen,
-            "Đã giải quyết (Đúng/Trước hạn)": grandTotal.daGQ_DungHan,
-            "Đã giải quyết (Quá hạn)": grandTotal.daGQ_QuaHan,
-            "Đang giải quyết (Trong hạn)": grandTotal.dangGQ_TrongHan,
-            "Đang giải quyết (Quá hạn)": grandTotal.dangGQ_QuaHan,
-            "Rút / Trả lại / Từ chối": grandTotal.rutHoSo
-        }];
-        let wsTongHop = XLSX.utils.json_to_sheet(tongHopChungData);
-        XLSX.utils.book_append_sheet(newWorkbook, wsTongHop, "Tong_hop_chung");
+  // ============ Xuất file Excel ============
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(tongHopRows), 'Tong hop');
+  const wsBieu7a = XLSX.utils.aoa_to_sheet(bieu7aRows);
+  wsBieu7a['!merges'] = [
+    {s:{r:0,c:0},e:{r:3,c:0}}, {s:{r:0,c:1},e:{r:3,c:1}},
+    {s:{r:0,c:2},e:{r:0,c:7}}, {s:{r:1,c:2},e:{r:1,c:2}},
+    {s:{r:1,c:3},e:{r:2,c:3}}, {s:{r:1,c:4},e:{r:1,c:6}},
+    {s:{r:1,c:7},e:{r:3,c:7}}, {s:{r:0,c:8},e:{r:0,c:11}},
+    {s:{r:1,c:8},e:{r:1,c:8}}, {s:{r:0,c:12},e:{r:0,c:14}},
+    {s:{r:1,c:12},e:{r:1,c:12}}, {s:{r:0,c:15},e:{r:3,c:15}},
+    {s:{r:0,c:16},e:{r:3,c:16}},
+  ];
+  XLSX.utils.book_append_sheet(wb, wsBieu7a, 'Bieu 7a');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(chiTietData), 'Chi tiet');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dmSnapshot), 'Danh muc da dung');
 
-        XLSX.writeFile(newWorkbook, "2026_Mau_Bieu_thong_ke_bao_cao_Quy_hoan_thien.xlsx");
-    }
+  const fromStr = (period.from||'').replace(/\//g,'-');
+  const toStr = (period.to||'').replace(/\//g,'-');
+  const fileName = `BaoCao_KSTTHC_DanHai_${fromStr||'kyfrom'}_den_${toStr||'kyto'}.xlsx`;
+  XLSX.writeFile(wb, fileName);
+
+  log(`\n✅ Hoàn tất. Đã xuất file: ${fileName}`);
+  log(`Tổng tiếp nhận: ${gTongTN} | Đã giải quyết: ${gTongDaGQ} (đúng/trước hạn: ${grand.daGQ_truoc+grand.daGQ_dung}, quá hạn: ${grand.daGQ_qua}) | Đang giải quyết: ${gTongDangGQ} (trong hạn: ${grand.dangGQ_trong}, quá hạn: ${grand.dangGQ_qua})`);
+}
 </script>
-
 </body>
 </html>
