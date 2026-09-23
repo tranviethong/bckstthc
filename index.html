@@ -97,7 +97,7 @@ const CATS = [
   {key:'daGQ_DungTruocHan',   label:'Đã giải quyết — Đúng và trước hạn'},
   {key:'daGQ_QuaHan',         label:'Đã giải quyết — Quá hạn'},
   {key:'hoSo_ChoTiepNhan',    label:'Hồ sơ chờ tiếp nhận'},
-  {key:'hoSo_TuChoi',         label:'Hồ sơ từ chối'},
+  {key:'hoSo_TuChoi',         label:'Hồ sơ từ chối tiếp nhận'},
   {key:'hoSo_YeuCauRut',      label:'Hồ sơ yêu cầu rút'},
 ];
 
@@ -429,9 +429,9 @@ function parseDetailWorkbook(f){
    XỬ LÝ CHÍNH: gom nhóm theo lĩnh vực, tính Biểu 7a + Tổng hợp, xuất Excel
    ========================================================================= */
 function emptyAgg(){
-  return {toanTrinh:0, motPhan:0, buuChinh:0, tiepTruc:0, kyTruoc:0,
+  return {toanTrinh:0, motPhan:0, buuChinh:0, tiepTruc:0, kyTruoc:0, rut:0,
           daGQ_truoc:0, daGQ_dung:0, daGQ_qua:0,
-          dangGQ_trong:0, dangGQ_qua:0, rutTuChoi:0, choTiepNhan:0};
+          dangGQ_trong:0, dangGQ_qua:0, tuChoi:0, choTiepNhan:0};
 }
 
 async function processAndExport(){
@@ -506,35 +506,75 @@ async function processAndExport(){
   (catRows.daGQ_QuaHan||[]).forEach(r=>{ getAgg(r.linhVuc).daGQ_qua++; });
   (catRows.dangGQ_ChuaDenHan||[]).forEach(r=>{ getAgg(r.linhVuc).dangGQ_trong++; });
   (catRows.dangGQ_QuaHan||[]).forEach(r=>{ getAgg(r.linhVuc).dangGQ_qua++; });
-  (catRows.hoSo_YeuCauRut||[]).forEach(r=>{ getAgg(r.linhVuc).rutTuChoi++; });
-  (catRows.hoSo_TuChoi||[]).forEach(r=>{ getAgg(r.linhVuc).rutTuChoi++; });
+
+  // Hồ sơ YÊU CẦU RÚT: hồ sơ này đã được tiếp nhận trước đó, nay có kết quả xử lý là "rút"
+  // -> tính vào Tổng số tiếp nhận (cột riêng) VÀ vào Đã giải quyết (phân loại đúng/trước hạn
+  // hay quá hạn theo thời gian), thay vì để riêng ngoài bảng cân đối như trước.
+  // Quy tắc phân loại theo đúng yêu cầu:
+  //   - Không có ngày hẹn trả (và không có ngày hoàn thành) -> mặc định tính Đúng hạn.
+  //   - Có ngày hẹn trả -> so với ngày hoàn thành để xếp vào Đúng/trước hạn hoặc Quá hạn.
+  (catRows.hoSo_YeuCauRut||[]).forEach(r=>{
+    const a = getAgg(r.linhVuc);
+    a.rut++;
+    if(!r.ngayHenTra){ a.daGQ_dung++; return; }
+    const cls = classifyDungTruocHan(r.ngayHenTra, r.ngayHoanThanh);
+    if(cls==='truoc') a.daGQ_truoc++; else a.daGQ_dung++;
+  });
+
+  // Hồ sơ CHỜ TIẾP NHẬN và TỪ CHỐI TIẾP NHẬN: theo đúng yêu cầu, KHÔNG được tính vào
+  // Tổng số tiếp nhận (và do đó cũng không tính vào Đã/Đang giải quyết) — chỉ hiển thị
+  // thành 2 cột thông tin riêng, nằm ngoài công thức Tiếp nhận = Đã GQ + Đang GQ.
+  (catRows.hoSo_TuChoi||[]).forEach(r=>{ getAgg(r.linhVuc).tuChoi++; });
   (catRows.hoSo_ChoTiepNhan||[]).forEach(r=>{ getAgg(r.linhVuc).choTiepNhan++; });
 
   // ============ SHEET "Biểu 7a" ============
+  // Cấu trúc 18 cột cố định (đánh số (1)..(18)), Tổng tiếp nhận = Đã giải quyết + Đang giải quyết
+  // vì hồ sơ "yêu cầu rút" nay được cộng vào cả Tiếp nhận lẫn Đã giải quyết; hồ sơ "chờ tiếp
+  // nhận" và "từ chối tiếp nhận" nằm ngoài công thức cân đối (2 cột thông tin cuối bảng).
   const bieu7aRows = [];
-  bieu7aRows.push(['STT','Lĩnh vực giải quyết','Số lượng hồ sơ tiếp nhận',null,null,null,null,null,'Số lượng hồ sơ đã giải quyết',null,null,null,'Số lượng hồ sơ đang giải quyết',null,null,'Hồ sơ rút/từ chối','Hồ sơ chờ tiếp nhận']);
-  bieu7aRows.push([null,null,'Tổng số','Trong kỳ',null,null,null,'Từ kỳ trước','Tổng số','Trước hạn','Đúng hạn','Quá hạn','Tổng số','Trong hạn','Quá hạn',null,null]);
-  bieu7aRows.push([null,null,null,'Trực tuyến toàn trình','Trực tuyến một phần','Qua dịch vụ bưu chính','Trực tiếp',null,null,null,null,null,null,null,null,null,null]);
-  bieu7aRows.push(['(1)','(2)','(3)=(4)+(5)+(6)+(7)+(8)','(4)','(5)','(6)','(7)','(8)','(9)=(10)+(11)+(12)','(10)','(11)','(12)','(13)=(14)+(15)','(14)','(15)','(16)','(17)']);
+  bieu7aRows.push(['STT','Lĩnh vực giải quyết','Số lượng hồ sơ tiếp nhận',null,null,null,null,null,null,'Số lượng hồ sơ đã giải quyết',null,null,null,'Số lượng hồ sơ đang giải quyết',null,null,'Từ chối tiếp nhận (*)','Chờ tiếp nhận (*)']);
+  bieu7aRows.push([null,null,'Tổng số','Trong kỳ',null,null,null,'Từ kỳ trước','Yêu cầu rút','Tổng số','Trước hạn','Đúng hạn','Quá hạn','Tổng số','Trong hạn','Quá hạn',null,null]);
+  bieu7aRows.push([null,null,null,'Trực tuyến toàn trình','Trực tuyến một phần','Qua dịch vụ bưu chính','Trực tiếp',null,null,null,null,null,null,null,null,null,null,null]);
+  bieu7aRows.push(['(1)','(2)','(3)=(4)+(5)+(6)+(7)+(8)+(9)','(4)','(5)','(6)','(7)','(8)','(9)','(10)=(11)+(12)+(13)','(11)','(12)','(13)','(14)=(15)+(16)','(15)','(16)','(17)','(18)']);
 
   let stt = 1;
   const grand = emptyAgg();
+  const balanceIssues = [];
   masterLinhVuc.forEach(lv=>{
     const a = agg[lv];
     Object.keys(grand).forEach(k=>grand[k]+=a[k]);
-    const tongTN = a.toanTrinh+a.motPhan+a.buuChinh+a.tiepTruc+a.kyTruoc;
+    const tongTN = a.toanTrinh+a.motPhan+a.buuChinh+a.tiepTruc+a.kyTruoc+a.rut;
     const tongDaGQ = a.daGQ_truoc+a.daGQ_dung+a.daGQ_qua;
     const tongDangGQ = a.dangGQ_trong+a.dangGQ_qua;
-    bieu7aRows.push([stt++, lv, tongTN, a.toanTrinh, a.motPhan, a.buuChinh, a.tiepTruc, a.kyTruoc,
+    if(tongTN !== tongDaGQ+tongDangGQ){
+      balanceIssues.push(`${lv}: Tiếp nhận=${tongTN} ≠ Đã GQ(${tongDaGQ})+Đang GQ(${tongDangGQ})=${tongDaGQ+tongDangGQ} (lệch ${tongTN-(tongDaGQ+tongDangGQ)})`);
+    }
+    bieu7aRows.push([stt++, lv, tongTN, a.toanTrinh, a.motPhan, a.buuChinh, a.tiepTruc, a.kyTruoc, a.rut,
       tongDaGQ, a.daGQ_truoc, a.daGQ_dung, a.daGQ_qua, tongDangGQ, a.dangGQ_trong, a.dangGQ_qua,
-      a.rutTuChoi, a.choTiepNhan]);
+      a.tuChoi, a.choTiepNhan]);
   });
-  const gTongTN = grand.toanTrinh+grand.motPhan+grand.buuChinh+grand.tiepTruc+grand.kyTruoc;
+  const gTongTN = grand.toanTrinh+grand.motPhan+grand.buuChinh+grand.tiepTruc+grand.kyTruoc+grand.rut;
   const gTongDaGQ = grand.daGQ_truoc+grand.daGQ_dung+grand.daGQ_qua;
   const gTongDangGQ = grand.dangGQ_trong+grand.dangGQ_qua;
-  bieu7aRows.push([null,'TỔNG CỘNG', gTongTN, grand.toanTrinh, grand.motPhan, grand.buuChinh, grand.tiepTruc, grand.kyTruoc,
+  bieu7aRows.push([null,'TỔNG CỘNG', gTongTN, grand.toanTrinh, grand.motPhan, grand.buuChinh, grand.tiepTruc, grand.kyTruoc, grand.rut,
     gTongDaGQ, grand.daGQ_truoc, grand.daGQ_dung, grand.daGQ_qua, gTongDangGQ, grand.dangGQ_trong, grand.dangGQ_qua,
-    grand.rutTuChoi, grand.choTiepNhan]);
+    grand.tuChoi, grand.choTiepNhan]);
+  bieu7aRows.push([]);
+  bieu7aRows.push(['(*) Hồ sơ "Từ chối tiếp nhận" và "Chờ tiếp nhận" không được tính vào Tổng số tiếp nhận (cột 3), theo đúng quy định — chỉ nêu để tham khảo.']);
+
+  // Đối chiếu tự động: Tổng số tiếp nhận PHẢI bằng Đã giải quyết + Đang giải quyết.
+  // Vì hồ sơ "yêu cầu rút" được cộng đồng thời vào cả 2 vế nên công thức luôn khớp; nếu vẫn
+  // lệch (ví dụ do file "Tổng số" nguồn không khớp file chi tiết) thì cảnh báo trong log để anh kiểm tra thủ công.
+  if(gTongTN !== gTongDaGQ+gTongDangGQ){
+    balanceIssues.push(`TỔNG CỘNG: Tiếp nhận=${gTongTN} ≠ Đã GQ(${gTongDaGQ})+Đang GQ(${gTongDangGQ})=${gTongDaGQ+gTongDangGQ}`);
+  }
+  if(balanceIssues.length>0){
+    log(`\n⚠ CẢNH BÁO: Số liệu Biểu 7a chưa khớp công thức Tiếp nhận = Đã GQ + Đang GQ ở ${balanceIssues.length} dòng:`);
+    balanceIssues.forEach(m=>log('   • '+m));
+    log('   → Nguyên nhân thường gặp: thiếu file chi tiết của 1 trong các loại biểu, hoặc 1 mã hồ sơ xuất hiện ở nhiều file khác loại. Anh kiểm tra lại Mục 2.');
+  } else {
+    log('\n✅ Đã đối chiếu: Tổng số tiếp nhận = Đã giải quyết + Đang giải quyết khớp ở mọi lĩnh vực.');
+  }
 
   // ============ SHEET "Tổng hợp" ============
   const tyLeDungHan = gTongDaGQ>0 ? (grand.daGQ_truoc+grand.daGQ_dung)/gTongDaGQ : 0;
@@ -554,6 +594,7 @@ async function processAndExport(){
     ['  - Tiếp nhận trực tuyến', tiepNhanTrucTuyen],
     ['  - Tiếp nhận trực tiếp / bưu chính', grand.tiepTruc+grand.buuChinh],
     ['  - Kỳ trước chuyển qua', grand.kyTruoc],
+    ['  - Yêu cầu rút (đã tiếp nhận, sau đó rút)', grand.rut],
     ['  - Tiếp nhận mới trong kỳ (trực tuyến + trực tiếp)', tiepNhanTrongKy],
     ['Tổng số hồ sơ đã giải quyết', gTongDaGQ],
     ['  - Đã giải quyết trước hạn', grand.daGQ_truoc],
@@ -562,8 +603,9 @@ async function processAndExport(){
     ['Tổng số hồ sơ đang giải quyết', gTongDangGQ],
     ['  - Đang giải quyết trong hạn', grand.dangGQ_trong],
     ['  - Đang giải quyết quá hạn', grand.dangGQ_qua],
-    ['Hồ sơ chờ tiếp nhận (chưa tính vào tiếp nhận)', grand.choTiepNhan],
-    ['Hồ sơ rút / từ chối', grand.rutTuChoi],
+    ['Kiểm tra cân đối (Tiếp nhận = Đã GQ + Đang GQ)', gTongTN===gTongDaGQ+gTongDangGQ ? 'Khớp' : `LỆCH ${gTongTN-(gTongDaGQ+gTongDangGQ)}`],
+    ['Hồ sơ từ chối tiếp nhận (không tính vào Tiếp nhận)', grand.tuChoi],
+    ['Hồ sơ chờ tiếp nhận (không tính vào Tiếp nhận)', grand.choTiepNhan],
     ['Tỷ lệ hồ sơ đúng và trước hạn', (tyLeDungHan*100).toFixed(2)+'%'],
     ['Tỷ lệ hồ sơ quá hạn', (tyLeQuaHan*100).toFixed(2)+'%'],
     ['Tỷ lệ hồ sơ tiếp nhận trực tuyến (trong kỳ)', (tyLeTrucTuyen*100).toFixed(2)+'%'],
@@ -605,13 +647,16 @@ async function processAndExport(){
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(tongHopRows), 'Tong hop');
   const wsBieu7a = XLSX.utils.aoa_to_sheet(bieu7aRows);
   wsBieu7a['!merges'] = [
-    {s:{r:0,c:0},e:{r:3,c:0}}, {s:{r:0,c:1},e:{r:3,c:1}},
-    {s:{r:0,c:2},e:{r:0,c:7}}, {s:{r:1,c:2},e:{r:1,c:2}},
-    {s:{r:1,c:3},e:{r:2,c:3}}, {s:{r:1,c:4},e:{r:1,c:6}},
-    {s:{r:1,c:7},e:{r:3,c:7}}, {s:{r:0,c:8},e:{r:0,c:11}},
-    {s:{r:1,c:8},e:{r:1,c:8}}, {s:{r:0,c:12},e:{r:0,c:14}},
-    {s:{r:1,c:12},e:{r:1,c:12}}, {s:{r:0,c:15},e:{r:3,c:15}},
-    {s:{r:0,c:16},e:{r:3,c:16}},
+    {s:{r:0,c:0},e:{r:3,c:0}},   // STT
+    {s:{r:0,c:1},e:{r:3,c:1}},   // Lĩnh vực giải quyết
+    {s:{r:0,c:2},e:{r:0,c:8}},   // Số lượng hồ sơ tiếp nhận (nhóm)
+    {s:{r:1,c:3},e:{r:1,c:6}},   // Trong kỳ (nhóm con)
+    {s:{r:1,c:7},e:{r:3,c:7}},   // Từ kỳ trước
+    {s:{r:1,c:8},e:{r:3,c:8}},   // Yêu cầu rút
+    {s:{r:0,c:9},e:{r:0,c:12}},  // Số lượng hồ sơ đã giải quyết (nhóm)
+    {s:{r:0,c:13},e:{r:0,c:15}}, // Số lượng hồ sơ đang giải quyết (nhóm)
+    {s:{r:0,c:16},e:{r:3,c:16}}, // Từ chối tiếp nhận (*)
+    {s:{r:0,c:17},e:{r:3,c:17}}, // Chờ tiếp nhận (*)
   ];
   XLSX.utils.book_append_sheet(wb, wsBieu7a, 'Bieu 7a');
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(chiTietData), 'Chi tiet');
