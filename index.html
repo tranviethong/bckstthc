@@ -536,15 +536,19 @@ async function processAndExport(){
   (catRows.hoSo_ChoTiepNhan||[]).forEach(r=>{ getAgg(r.linhVuc).choTiepNhan++; });
 
   // ============ SHEET "Biểu 7a" ============
-  // Cấu trúc 18 cột cố định (đánh số (1)..(18)). Tổng tiếp nhận = Đã giải quyết + Đang giải quyết
-  // vì hồ sơ "yêu cầu rút" và "từ chối" (trong quá trình xử lý) đều là hồ sơ đã tiếp nhận, nay
-  // được cộng vào cả Tiếp nhận lẫn Đã giải quyết. Riêng "chờ tiếp nhận" (chưa từng tiếp nhận)
-  // nằm ngoài công thức cân đối (1 cột thông tin cuối bảng).
+  // Cấu trúc 18 cột cố định (đánh số (1)..(18)).
+  // QUAN TRỌNG: hồ sơ "Yêu cầu rút" và "Từ chối" (trong quá trình xử lý) đã được đếm sẵn trong
+  // các cột Tiếp nhận theo kênh nộp (toàn trình/một phần/bưu chính/trực tiếp/kỳ trước) TỪ TRƯỚC
+  // — vì chúng vốn là hồ sơ đã tiếp nhận, chỉ là có thêm kết quả xử lý là rút/từ chối. Do đó
+  // KHÔNG được cộng thêm 1 lần nữa vào Tổng số tiếp nhận (nếu cộng thêm sẽ bị đếm trùng 2 lần).
+  // "Rút" và "Từ chối" chỉ được cộng vào Đã giải quyết (theo thời gian), và hiển thị thêm 2 cột
+  // "Trong đó" (không tham gia phép cộng) để biết trong Đã giải quyết có bao nhiêu là rút/từ chối.
+  // Nhờ vậy công thức Tiếp nhận = Đã giải quyết + Đang giải quyết tự động khớp.
   const bieu7aRows = [];
-  bieu7aRows.push(['STT','Lĩnh vực giải quyết','Số lượng hồ sơ tiếp nhận',null,null,null,null,null,null,null,'Số lượng hồ sơ đã giải quyết',null,null,null,'Số lượng hồ sơ đang giải quyết',null,null,'Chờ tiếp nhận (*)']);
-  bieu7aRows.push([null,null,'Tổng số','Trong kỳ',null,null,null,'Từ kỳ trước','Yêu cầu rút','Từ chối','Tổng số','Trước hạn','Đúng hạn','Quá hạn','Tổng số','Trong hạn','Quá hạn',null]);
+  bieu7aRows.push(['STT','Lĩnh vực giải quyết','Số lượng hồ sơ tiếp nhận',null,null,null,null,null,'Số lượng hồ sơ đã giải quyết',null,null,null,'Số lượng hồ sơ đang giải quyết',null,null,'Trong đó (thuộc Đã GQ)',null,'Chờ tiếp nhận (**)']);
+  bieu7aRows.push([null,null,'Tổng số','Trong kỳ',null,null,null,'Từ kỳ trước','Tổng số','Trước hạn','Đúng hạn','Quá hạn','Tổng số','Trong hạn','Quá hạn','Yêu cầu rút (*)','Từ chối (*)',null]);
   bieu7aRows.push([null,null,null,'Trực tuyến toàn trình','Trực tuyến một phần','Qua dịch vụ bưu chính','Trực tiếp',null,null,null,null,null,null,null,null,null,null,null]);
-  bieu7aRows.push(['(1)','(2)','(3)=(4)+(5)+(6)+(7)+(8)+(9)+(10)','(4)','(5)','(6)','(7)','(8)','(9)','(10)','(11)=(12)+(13)+(14)','(12)','(13)','(14)','(15)=(16)+(17)','(16)','(17)','(18)']);
+  bieu7aRows.push(['(1)','(2)','(3)=(4)+(5)+(6)+(7)+(8)','(4)','(5)','(6)','(7)','(8)','(9)=(10)+(11)+(12)','(10)','(11)','(12)','(13)=(14)+(15)','(14)','(15)','(16)','(17)','(18)']);
 
   let stt = 1;
   const grand = emptyAgg();
@@ -552,36 +556,36 @@ async function processAndExport(){
   masterLinhVuc.forEach(lv=>{
     const a = agg[lv];
     Object.keys(grand).forEach(k=>grand[k]+=a[k]);
-    const tongTN = a.toanTrinh+a.motPhan+a.buuChinh+a.tiepTruc+a.kyTruoc+a.rut+a.tuChoi;
+    const tongTN = a.toanTrinh+a.motPhan+a.buuChinh+a.tiepTruc+a.kyTruoc;
     const tongDaGQ = a.daGQ_truoc+a.daGQ_dung+a.daGQ_qua;
     const tongDangGQ = a.dangGQ_trong+a.dangGQ_qua;
     if(tongTN !== tongDaGQ+tongDangGQ){
       balanceIssues.push(`${lv}: Tiếp nhận=${tongTN} ≠ Đã GQ(${tongDaGQ})+Đang GQ(${tongDangGQ})=${tongDaGQ+tongDangGQ} (lệch ${tongTN-(tongDaGQ+tongDangGQ)})`);
     }
-    bieu7aRows.push([stt++, lv, tongTN, a.toanTrinh, a.motPhan, a.buuChinh, a.tiepTruc, a.kyTruoc, a.rut, a.tuChoi,
+    bieu7aRows.push([stt++, lv, tongTN, a.toanTrinh, a.motPhan, a.buuChinh, a.tiepTruc, a.kyTruoc,
       tongDaGQ, a.daGQ_truoc, a.daGQ_dung, a.daGQ_qua, tongDangGQ, a.dangGQ_trong, a.dangGQ_qua,
-      a.choTiepNhan]);
+      a.rut, a.tuChoi, a.choTiepNhan]);
   });
-  const gTongTN = grand.toanTrinh+grand.motPhan+grand.buuChinh+grand.tiepTruc+grand.kyTruoc+grand.rut+grand.tuChoi;
+  const gTongTN = grand.toanTrinh+grand.motPhan+grand.buuChinh+grand.tiepTruc+grand.kyTruoc;
   const gTongDaGQ = grand.daGQ_truoc+grand.daGQ_dung+grand.daGQ_qua;
   const gTongDangGQ = grand.dangGQ_trong+grand.dangGQ_qua;
-  bieu7aRows.push([null,'TỔNG CỘNG', gTongTN, grand.toanTrinh, grand.motPhan, grand.buuChinh, grand.tiepTruc, grand.kyTruoc, grand.rut, grand.tuChoi,
+  bieu7aRows.push([null,'TỔNG CỘNG', gTongTN, grand.toanTrinh, grand.motPhan, grand.buuChinh, grand.tiepTruc, grand.kyTruoc,
     gTongDaGQ, grand.daGQ_truoc, grand.daGQ_dung, grand.daGQ_qua, gTongDangGQ, grand.dangGQ_trong, grand.dangGQ_qua,
-    grand.choTiepNhan]);
+    grand.rut, grand.tuChoi, grand.choTiepNhan]);
   bieu7aRows.push([]);
-  bieu7aRows.push(['(*) Hồ sơ "Chờ tiếp nhận" chưa từng được tiếp nhận nên không tính vào Tổng số tiếp nhận (cột 3) — chỉ nêu để tham khảo. Hồ sơ "Yêu cầu rút" và "Từ chối" (trong quá trình xử lý) đã được tiếp nhận trước đó nên vẫn tính vào Tiếp nhận và được xếp vào Đã giải quyết theo thời gian.']);
+  bieu7aRows.push(['(*) Cột "Trong đó" chỉ để tham khảo, số liệu đã được TÍNH SẴN trong cột Đã giải quyết (9) — KHÔNG cộng thêm vào Tiếp nhận (3) vì hồ sơ rút/từ chối vốn đã có mặt trong các cột tiếp nhận theo kênh nộp (4)-(8).']);
+  bieu7aRows.push(['(**) Hồ sơ "Chờ tiếp nhận" chưa từng được tiếp nhận nên không tính vào Tổng số tiếp nhận (3), không tính vào Đã/Đang giải quyết — chỉ nêu để tham khảo.']);
 
   // Đối chiếu tự động: Tổng số tiếp nhận PHẢI bằng Đã giải quyết + Đang giải quyết.
-  // Vì hồ sơ "yêu cầu rút" và "từ chối" được cộng đồng thời vào cả 2 vế nên công thức luôn
-  // khớp; nếu vẫn lệch (ví dụ do file "Tổng số" nguồn không khớp file chi tiết) thì cảnh báo
-  // trong log để anh kiểm tra thủ công.
+  // Nếu vẫn lệch (ví dụ do thiếu file chi tiết, hoặc 1 mã hồ sơ bị lặp ở nhiều loại file khác
+  // nhau) thì cảnh báo cụ thể trong log để anh kiểm tra lại dữ liệu nguồn ở Mục 2.
   if(gTongTN !== gTongDaGQ+gTongDangGQ){
     balanceIssues.push(`TỔNG CỘNG: Tiếp nhận=${gTongTN} ≠ Đã GQ(${gTongDaGQ})+Đang GQ(${gTongDangGQ})=${gTongDaGQ+gTongDangGQ}`);
   }
   if(balanceIssues.length>0){
     log(`\n⚠ CẢNH BÁO: Số liệu Biểu 7a chưa khớp công thức Tiếp nhận = Đã GQ + Đang GQ ở ${balanceIssues.length} dòng:`);
     balanceIssues.forEach(m=>log('   • '+m));
-    log('   → Nguyên nhân thường gặp: thiếu file chi tiết của 1 trong các loại biểu, hoặc 1 mã hồ sơ xuất hiện ở nhiều file khác loại. Anh kiểm tra lại Mục 2.');
+    log('   → Nguyên nhân thường gặp: (1) thiếu file chi tiết của 1 trong các loại biểu (ví dụ chưa tải file "Đang giải quyết — Chưa đến hạn"); (2) 1 mã hồ sơ xuất hiện ở nhiều file khác loại nên bị đếm trùng/thiếu; (3) file "Tiếp nhận — Tổng số" không được dùng để tính (chỉ 4 file kênh + kỳ trước được dùng) nên nếu tổng trong file đó khác tổng 4 kênh + kỳ trước cũng sẽ gây lệch — anh đối chiếu lại. Anh kiểm tra lại Mục 2.');
   } else {
     log('\n✅ Đã đối chiếu: Tổng số tiếp nhận = Đã giải quyết + Đang giải quyết khớp ở mọi lĩnh vực.');
   }
@@ -604,13 +608,13 @@ async function processAndExport(){
     ['  - Tiếp nhận trực tuyến', tiepNhanTrucTuyen],
     ['  - Tiếp nhận trực tiếp / bưu chính', grand.tiepTruc+grand.buuChinh],
     ['  - Kỳ trước chuyển qua', grand.kyTruoc],
-    ['  - Yêu cầu rút (đã tiếp nhận, sau đó rút)', grand.rut],
-    ['  - Từ chối trong quá trình xử lý (đã tiếp nhận, sau đó từ chối)', grand.tuChoi],
     ['  - Tiếp nhận mới trong kỳ (trực tuyến + trực tiếp)', tiepNhanTrongKy],
     ['Tổng số hồ sơ đã giải quyết', gTongDaGQ],
     ['  - Đã giải quyết trước hạn', grand.daGQ_truoc],
     ['  - Đã giải quyết đúng hạn', grand.daGQ_dung],
     ['  - Đã giải quyết quá hạn', grand.daGQ_qua],
+    ['  - Trong đó: Yêu cầu rút (đã xếp vào đúng/trước hạn hoặc quá hạn ở trên)', grand.rut],
+    ['  - Trong đó: Từ chối trong quá trình xử lý (đã xếp vào đúng/trước hạn hoặc quá hạn ở trên)', grand.tuChoi],
     ['Tổng số hồ sơ đang giải quyết', gTongDangGQ],
     ['  - Đang giải quyết trong hạn', grand.dangGQ_trong],
     ['  - Đang giải quyết quá hạn', grand.dangGQ_qua],
@@ -659,14 +663,15 @@ async function processAndExport(){
   wsBieu7a['!merges'] = [
     {s:{r:0,c:0},e:{r:3,c:0}},   // STT
     {s:{r:0,c:1},e:{r:3,c:1}},   // Lĩnh vực giải quyết
-    {s:{r:0,c:2},e:{r:0,c:9}},   // Số lượng hồ sơ tiếp nhận (nhóm)
+    {s:{r:0,c:2},e:{r:0,c:7}},   // Số lượng hồ sơ tiếp nhận (nhóm)
     {s:{r:1,c:3},e:{r:1,c:6}},   // Trong kỳ (nhóm con)
     {s:{r:1,c:7},e:{r:3,c:7}},   // Từ kỳ trước
-    {s:{r:1,c:8},e:{r:3,c:8}},   // Yêu cầu rút
-    {s:{r:1,c:9},e:{r:3,c:9}},   // Từ chối
-    {s:{r:0,c:10},e:{r:0,c:13}}, // Số lượng hồ sơ đã giải quyết (nhóm)
-    {s:{r:0,c:14},e:{r:0,c:16}}, // Số lượng hồ sơ đang giải quyết (nhóm)
-    {s:{r:0,c:17},e:{r:3,c:17}}, // Chờ tiếp nhận (*)
+    {s:{r:0,c:8},e:{r:0,c:11}},  // Số lượng hồ sơ đã giải quyết (nhóm)
+    {s:{r:0,c:12},e:{r:0,c:14}}, // Số lượng hồ sơ đang giải quyết (nhóm)
+    {s:{r:0,c:15},e:{r:0,c:16}}, // Trong đó (thuộc Đã GQ) — nhóm
+    {s:{r:1,c:15},e:{r:3,c:15}}, // Yêu cầu rút (*)
+    {s:{r:1,c:16},e:{r:3,c:16}}, // Từ chối (*)
+    {s:{r:0,c:17},e:{r:3,c:17}}, // Chờ tiếp nhận (**)
   ];
   XLSX.utils.book_append_sheet(wb, wsBieu7a, 'Bieu 7a');
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(chiTietData), 'Chi tiet');
