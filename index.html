@@ -68,14 +68,8 @@
 </div>
 
 <script>
-    // Danh mục mặc định ban đầu
-    let DANH_MUC_LINH_VUC = {
-        "1.002238": { linhVuc: "Tư pháp - Hộ tịch", mucDo: "Toàn trình" },
-        "1.001124": { linhVuc: "Đất đai", mucDo: "Một phần" },
-        "1.000876": { linhVuc: "Lao động - Thương binh và Xã hội", mucDo: "Một phần" }
-    };
+    let DANH_MUC_LINH_VUC = {};
 
-    // Kiểm tra và tải danh mục từ bộ nhớ trình duyệt khi khởi chạy
     window.onload = function() {
         let savedDM = localStorage.getItem("DANH_MUC_KSTTHC_DANHAI");
         if (savedDM) {
@@ -83,7 +77,7 @@
             let count = Object.keys(DANH_MUC_LINH_VUC).length;
             updateDMStatus(`Đã lưu danh mục trước đó (${count} TTHC)`, "#d4edda", "#155724");
         } else {
-            updateDMStatus("Đang dùng danh mục mặc định", "#e2e8f0", "#475569");
+            updateDMStatus("Chưa có danh mục (sẽ tự động dùng Lĩnh vực sẵn có trong file)", "#e2e8f0", "#475569");
         }
     };
 
@@ -94,7 +88,11 @@
         badge.style.color = color;
     }
 
-    // Đọc file Danh mục Lĩnh vực và lưu vào LocalStorage
+    function cleanLinhVucName(name) {
+        if (!name) return "";
+        return name.toString().replace(/\s*\(\d+\)$/, '').trim();
+    }
+
     async function loadCustomLinhVuc(input) {
         if (!input.files || input.files.length === 0) return;
         
@@ -108,22 +106,32 @@
         const rawData = XLSX.utils.sheet_to_json(sheet, { range: headerRowIndex, defval: "" });
 
         let updatedCount = 0;
+        let lastLinhVuc = "";
+
         rawData.forEach(row => {
-            let key = getFieldValue(row, ["Mã TTHC", "Mã thủ tục", "Tên TTHC", "Tên thủ tục"]);
-            let linhVuc = getFieldValue(row, ["Lĩnh vực", "Tên lĩnh vực"]);
+            let lvGoc = getFieldValue(row, ["Lĩnh vực (rút gọn, dùng để tra cứu)", "Lĩnh vực", "Tên lĩnh vực"]);
+            if (lvGoc) {
+                lastLinhVuc = cleanLinhVucName(lvGoc);
+            }
+
+            let maTTHC = getFieldValue(row, ["Mã TTHC (tra cứu)", "Mã TTHC", "Mã thủ tục"]).trim();
+            let tenTTHC = getFieldValue(row, ["Tên TTHC", "Tên thủ tục"]).trim();
             let mucDo = getFieldValue(row, ["Mức độ", "Mức độ DVC"]) || "Một phần";
 
-            if (key && linhVuc) {
-                DANH_MUC_LINH_VUC[key.trim()] = {
-                    linhVuc: linhVuc.trim(),
-                    mucDo: mucDo.trim()
-                };
+            let infoObj = { linhVuc: lastLinhVuc, mucDo: mucDo.trim() };
+
+            if (maTTHC) {
+                DANH_MUC_LINH_VUC[maTTHC] = infoObj;
+                updatedCount++;
+            }
+            if (tenTTHC) {
+                DANH_MUC_LINH_VUC[tenTTHC] = infoObj;
                 updatedCount++;
             }
         });
 
         localStorage.setItem("DANH_MUC_KSTTHC_DANHAI", JSON.stringify(DANH_MUC_LINH_VUC));
-        updateDMStatus(`Đã cập nhật & lưu danh mục mới (${updatedCount} TTHC)`, "#d4edda", "#155724");
+        updateDMStatus(`Đã cập nhật & lưu danh mục mới (${updatedCount} mục tra cứu)`, "#d4edda", "#155724");
     }
 
     function findHeaderRowIndex(matrix) {
@@ -167,25 +175,27 @@
         return rawData.map(row => {
             let maTTHC = getFieldValue(row, ["Mã TTHC", "Mã thủ tục"]).trim();
             let tenTTHC = getFieldValue(row, ["Tên TTHC", "Tên thủ tục hành chính", "Tên thủ tục"]).trim();
-            
+            let fileLinhVuc = getFieldValue(row, ["Lĩnh vực", "Tên lĩnh vực"]).trim();
+
             let matchInfo = DANH_MUC_LINH_VUC[maTTHC] || DANH_MUC_LINH_VUC[tenTTHC];
-            let linhVucGoc = getFieldValue(row, ["Lĩnh vực", "Tên lĩnh vực"]) || (matchInfo ? matchInfo.linhVuc : "Khác");
-            let mucDoGoc = getFieldValue(row, ["Mức độ", "Mức độ DVC"]) || (matchInfo ? matchInfo.mucDo : "Một phần");
+            
+            // ƯU TIÊN LẤY TỪ FILE SỐ LIỆU -> NẾU RỖNG MỚI LẤY TỪ DANH MỤC
+            let finalLinhVuc = cleanLinhVucName(fileLinhVuc || (matchInfo ? matchInfo.linhVuc : ""));
+            let finalMucDo = getFieldValue(row, ["Mức độ", "Mức độ DVC"]).trim() || (matchInfo ? matchInfo.mucDo : "Một phần");
 
             return {
                 ...row,
-                "Lĩnh vực": linhVucGoc,
-                "Mức độ": mucDoGoc
+                "Lĩnh vực": finalLinhVuc,
+                "Mức độ": finalMucDo
             };
         });
     }
 
-    // TÍNH NĂNG MỚI: TỰ ĐỘNG TỔNG HỢP THEO LĨNH VỰC VÀ XUẤT SHEET 07a_BTP & TỔNG HỢP CHUNG
     async function processAndExport() {
         const sheetConfigs = [
-            { id: "file1", key: "trucTuyen", name: "Trong kỳ trực tuyến" },
-            { id: "file2", key: "trucTiep", name: "Trong kỳ trực tiếp" },
-            { id: "file3", key: "kyTruoc", name: "Kỳ trước chuyển sang" },
+            { id: "file1", name: "Trong kỳ trực tuyến" },
+            { id: "file2", name: "Trong kỳ trực tiếp" },
+            { id: "file3", name: "Kỳ trước chuyển sang" },
             { id: "file4", name: "Đã GQ đúng hạn" },
             { id: "file5", name: "Đã GQ quá hạn" },
             { id: "file6", name: "Rút hồ sơ - Trả lại" },
@@ -195,7 +205,7 @@
 
         const newWorkbook = XLSX.utils.book_new();
         let totalRecords = 0;
-        let linhVucMap = {}; // Gom nhóm số liệu theo Lĩnh vực
+        let linhVucMap = {};
 
         for (const config of sheetConfigs) {
             let rawData = await readExcelFile(config.id);
@@ -203,9 +213,10 @@
                 totalRecords += rawData.length;
                 let processedData = enrichDataWithLinhVuc(rawData);
 
-                // Thống kê số lượng từng file vào Map Lĩnh vực
                 processedData.forEach(row => {
-                    let lv = row["Lĩnh vực"] || "Khác";
+                    let lv = row["Lĩnh vực"];
+                    if (!lv) return; // Nếu hoàn toàn không có tên Lĩnh vực thì bỏ qua dòng rỗng
+
                     if (!linhVucMap[lv]) {
                         linhVucMap[lv] = {
                             trucTuyen: 0, trucTiep: 0, kyTruoc: 0,
@@ -215,15 +226,14 @@
                         };
                     }
 
-                    let count = 1; // Mỗi dòng hồ sơ tương ứng 1 hồ sơ
-                    if (config.id === "file1") linhVucMap[lv].trucTuyen += count;
-                    else if (config.id === "file2") linhVucMap[lv].trucTiep += count;
-                    else if (config.id === "file3") linhVucMap[lv].kyTruoc += count;
-                    else if (config.id === "file4") linhVucMap[lv].daGQ_DungHan += count;
-                    else if (config.id === "file5") linhVucMap[lv].daGQ_QuaHan += count;
-                    else if (config.id === "file6") linhVucMap[lv].rutHoSo += count;
-                    else if (config.id === "file7") linhVucMap[lv].dangGQ_TrongHan += count;
-                    else if (config.id === "file8") linhVucMap[lv].dangGQ_QuaHan += count;
+                    if (config.id === "file1") linhVucMap[lv].trucTuyen++;
+                    else if (config.id === "file2") linhVucMap[lv].trucTiep++;
+                    else if (config.id === "file3") linhVucMap[lv].kyTruoc++;
+                    else if (config.id === "file4") linhVucMap[lv].daGQ_DungHan++;
+                    else if (config.id === "file5") linhVucMap[lv].daGQ_QuaHan++;
+                    else if (config.id === "file6") linhVucMap[lv].rutHoSo++;
+                    else if (config.id === "file7") linhVucMap[lv].dangGQ_TrongHan++;
+                    else if (config.id === "file8") linhVucMap[lv].dangGQ_QuaHan++;
                 });
 
                 let worksheet = XLSX.utils.json_to_sheet(processedData);
@@ -236,7 +246,7 @@
             return;
         }
 
-        // --- 1. TẠO SHEET BÁO CÁO 07a_BTP_KSTT (Gom nhóm theo Lĩnh vực & Lọc bỏ dòng bằng 0) ---
+        // 1. TẠO SHEET 07a_BTP_KSTT (Chỉ giữ Lĩnh vực có phát sinh hồ sơ)
         let report07aData = [];
         let stt = 1;
         let grandTotal = {
@@ -250,10 +260,8 @@
             let tongNhan = d.kyTruoc + d.trucTiep + d.trucTuyen;
             let tongDaGQ = d.daGQ_DungHan + d.daGQ_QuaHan;
             let tongDangGQ = d.dangGQ_TrongHan + d.dangGQ_QuaHan;
-            let tongCong = tongNhan; // Tổng hồ sơ xử lý
 
-            // Bỏ qua lĩnh vực nếu tất cả số liệu đều bằng 0
-            if (tongCong === 0 && d.rutHoSo === 0) continue;
+            if (tongNhan === 0 && d.rutHoSo === 0 && tongDaGQ === 0 && tongDangGQ === 0) continue;
 
             report07aData.push({
                 "STT": stt++,
@@ -271,7 +279,6 @@
                 "Rút / Trả lại / Từ chối": d.rutHoSo
             });
 
-            // Cộng dồn tổng toàn xã
             grandTotal.tongNhan += tongNhan;
             grandTotal.kyTruoc += d.kyTruoc;
             grandTotal.trucTiep += d.trucTiep;
@@ -285,7 +292,6 @@
             grandTotal.rutHoSo += d.rutHoSo;
         }
 
-        // Chèn dòng TỔNG CỘNG lên đầu Báo cáo 07a
         report07aData.unshift({
             "STT": "",
             "Lĩnh vực": "TỔNG CỘNG TOÀN XÃ",
@@ -305,7 +311,7 @@
         let ws07a = XLSX.utils.json_to_sheet(report07aData);
         XLSX.utils.book_append_sheet(newWorkbook, ws07a, "07a_BTP_KSTT");
 
-        // --- 2. TẠO SHEET TỔNG HỢP CHUNG ---
+        // 2. TẠO SHEET TỔNG HỢP CHUNG
         let tongHopChungData = [{
             "Đơn vị": "UBND xã Đan Hải",
             "Tổng số hồ sơ tiếp nhận": grandTotal.tongNhan,
@@ -321,7 +327,6 @@
         let wsTongHop = XLSX.utils.json_to_sheet(tongHopChungData);
         XLSX.utils.book_append_sheet(newWorkbook, wsTongHop, "Tong_hop_chung");
 
-        // Xuất file
         XLSX.writeFile(newWorkbook, "2026_Mau_Bieu_thong_ke_bao_cao_Quy_hoan_thien.xlsx");
     }
 </script>
